@@ -3,7 +3,7 @@ GITHASH_COMMIT=$(shell git log --format="%h" -n 1)
 
 .PHONY: test
 test:
-	go test -race -coverprofile=coverage.out -timeout 30s github.com/AleksandrMac/ushort
+#	go test -race -coverprofile=coverage.out -timeout 30s github.com/AleksandrMac/ushort
 
 check:
 	golangci-lint run
