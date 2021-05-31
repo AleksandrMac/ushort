@@ -1,0 +1,414 @@
+openapi: 3.0.3
+info:
+  version: 0.0.1
+  title: UShort API
+  description: 
+    API сервиса сокращения ссылок
+security:
+  - api_key: []
+paths:
+  /login:
+    post:
+      summary: Аутентификация в UShort
+      tags:
+       - Аутентификация
+      operationId: login
+      requestBody:
+        required: true
+        description: Учетные данные, необходимые в теле запроса
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: Email адрес пользователя
+                  minLength: 1
+                password:
+                  type: string
+                  description: Пароль пользователя
+                  format: password
+      responses:
+        200:
+          description: Успешная авторизация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessToken'       
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/ServerError'
+      security:
+        []
+  /logout:
+    get:
+      summary: Выход из UShort
+      tags:
+       - Аутентификация
+      operationId: logout
+      responses:
+        200:
+          description: Успешный выход
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/ServerError'
+  /user:
+    get:
+      summary: Получаем список пользователей UShort
+      tags:
+        - Пользователь
+      operationId: user:list
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+        - $ref: '#/components/parameters/sort'
+        - $ref: '#/components/parameters/fields'
+        - $ref: '#/components/parameters/filter'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'       
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/ServerError'
+    post:
+      summary: Создаем нового пользователя
+      tags:
+        - Пользователь
+      operationId: user:create
+      requestBody:
+        description: The user to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        201:
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'       
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/ServerError'
+  /user/{id}:
+    get:
+      summary: Получение пользователя по ИД
+      tags:
+        - Пользователь
+      operationId: user:get
+      parameters:
+        - $ref: '#/components/parameters/id'
+        - $ref: '#/components/parameters/fields'
+      responses:
+        200:
+          description: Успешно, пользователь получен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'       
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/ServerError'
+    delete:
+      summary: Удаление пользователя по ИД
+      tags:
+        - Пользователь
+      operationId: user:delete
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        204:
+          $ref: '#/components/responses/SuccessNoContent'       
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/ServerError'
+    patch:
+      summary: Обновление пользователя по ИД
+      tags:
+        - Пользователь
+      operationId: user:update
+      parameters:
+        - $ref: '#/components/parameters/id'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        201:
+          description: Пользователь был обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/SuccessNoContent'       
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/ServerError'
+  /user/{id}/create_token:
+    post:
+      summary: Создайте новый токен доступа для пользователя с идентификатором 
+      description: Создайте новый токен доступа для пользователя с идентификатором
+      tags:
+        - Пользователь
+      operationId: user:create_token
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        201:
+          description: Токен доступа пользователя создан 
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessToken'       
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/ServerError'
+  /user/{id}/delete_token/{api_key}:
+    delete:
+      summary: Удалить токен доступа пользователя на основе его api_key
+      tags:
+        - Пользователь
+      operationId: user:delete_token
+      parameters:
+        - $ref: '#/components/parameters/id'
+        - $ref: '#/components/parameters/api_key'
+      responses:
+        204:
+          $ref: '#/components/responses/SuccessNoContent'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/ServerError'
+components:
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: api_key
+      in: header
+  schemas:
+    User:
+      description: Пользователь в Ushort API
+      type: object
+      required:
+      - email
+      - password
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+          readOnly: true
+          description: Уникальный идентификатор пользователя
+          minimum: 0
+        email:
+          type: string
+          format: '^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$'
+          example: alex@u.short
+          description: Уникальный email пользователя
+          minLength: 5
+        password:
+          type: string
+          description: Пароль для пользователя
+          example: '*tm92WJtew7yipeD#Bc3eUJfM435ZIy!5c&'
+          minLength: 8
+          writeOnly: true
+          format: password
+    URL:
+      description: Короткий URL
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+          readOnly: true
+          description: Уникальный идентификатор короткого url
+          minimum: 0
+        short:
+          type: string
+          description: Короткий URL
+          example: "/hotaction"
+        full:
+          type: string
+          description: Полный URL
+          example: "shop.com/items?param1=somevalue1&param2=somevalue2&param3=somevalue3"
+        createdDate:
+          type: string
+          format: date-time
+          description: Дата создания короткой ссылки
+        description:
+          type: string
+          description: Какое-то, короткое, описание цели короткой ссылки.
+          example: instagram promo
+    AccessToken:
+      type: object
+      description: Токен доступа
+      properties:
+        api_key:
+          type: string
+          pattern: "^[A-Fa-f0-9]{32}$"
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Код ошибки
+        message:
+          type: string
+          description: Сообщение ошибки
+  responses:
+    SuccessNoContent:
+      description: Действие завершено, но контент не возвращается 
+    NotFound:
+      description: Указанный ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequest:
+      description: Сервер не может понять ваш запрос 
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthenticated:
+      description: Неаутентифицированный запрос 
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Неавторизованный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    MethodNotAllowed:
+      description: Метод не разрешен
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    PreconditionFailed:
+      description: Не удалось выполнить предварительное условие этого действия.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServerError:
+      description: Ошибка сервера, попробуйте позже 
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  parameters:
+    api_key:
+      name: api_key
+      in: path
+      description: Api_key уникальный идентификатор
+      required: true
+      schema:
+        type: string
+        pattern: '^[A-Fa-f0-9]{32}$'
+        minLength: 32
+        maxLength: 32
+    id:
+      name: id
+      in: path
+      description: Уникальный идентификатор
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
+    sort:
+      name: sort
+      description: Сортировка результатов по полю и возрастанию
+      example: ["-email","id"]
+      in: query
+      required: false
+      schema:
+        type: array
+        items:
+          type: string
+          description: Поле для сортировки может иметь префикс "-" для сортировки по убыванию. 
+    limit:
+      name: limit
+      description: Количество возвращаемых ресурсов
+      required: false
+      in: query
+      example: 50
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 25
+    offset:
+      name: offset
+      description: Количество объектов, которые нужно пропустить перед началом сбора результатов. 
+      required: false
+      example: 2
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    filter:
+      name: filter
+      description: Отфильтруйте результаты запроса по предоставленной строке 
+      required: false
+      example: "Мой поиск"
+      in: query
+      schema:
+        type: string
+        description: Поиск в виде строки 
+    https://app.swaggerhub.com/apis/VantagePoint/PrivCloud-API/0.0.9#/User
