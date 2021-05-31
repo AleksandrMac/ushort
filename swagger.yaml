@@ -228,6 +228,176 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         500:
           $ref: '#/components/responses/ServerError'
+  /{urlId}:
+    get:
+      security: []
+      tags:
+      - URL
+      summary: Перенаправление на полную ссылку
+      operationId: url:redirect
+      parameters:
+      - $ref: '#/components/parameters/urlId'
+      responses:
+        301:
+          description: Moved Permanently
+          headers:
+            Location:              
+              description: адрес перенаправленя
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/SuccessNoContent'       
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/ServerError'
+  /url:
+    get:
+      tags: 
+        - URL
+      summary: Получение списка коротких ссылок пользователя UShort
+      operationId: url:list
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/URL'  
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/ServerError'
+    post:
+      summary: Создание новой короткой ссылки
+      tags:
+        - URL
+      operationId: url:create
+      requestBody:
+        description: Создание короткой ссылки
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/URL'
+      responses:
+        201:
+          description: Короткая ссылка создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/URL'       
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/ServerError'      
+  /url/{urlId}:
+    get:
+      tags: 
+        - URL
+      summary: Получение короткой ссылки по ID
+      operationId: url
+      parameters:
+      - $ref: '#/components/parameters/urlId'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/URL'  
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/ServerError'
+    patch:
+      summary: Обновление информации о короткой ссылке
+      tags:
+        - URL
+      operationId: url:update
+      parameters:
+        - $ref: '#/components/parameters/urlId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/URL'
+      responses:
+        201:
+          description: Короткая ссалка была обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/SuccessNoContent'       
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/ServerError'
+    delete:
+      summary: Удаление короткой ссылки
+      tags:
+        - URL
+      operationId: url:delete
+      parameters:
+        - $ref: '#/components/parameters/urlId'
+      responses:
+        204:
+          $ref: '#/components/responses/SuccessNoContent'       
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/ServerError'
+  /url/generate:
+    get:
+      tags: 
+        - URL
+      summary: Генерация короткой ссылки
+      parameters:
+      - $ref: '#/components/parameters/redirectURL'
+      operationId: url:generate
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shortUrl:
+                    type: string
+                    example: /hotkey
+        400:
+          $ref: '#/components/responses/BadRequest'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Unauthorized'
+        500:
+          $ref: '#/components/responses/ServerError'
 components:
   securitySchemes:
     api_key:
@@ -266,18 +436,11 @@ components:
       description: Короткий URL
       type: object
       properties:
-        id:
-          type: integer
-          format: int64
-          example: 1
-          readOnly: true
-          description: Уникальный идентификатор короткого url
-          minimum: 0
-        short:
+        urlId:
           type: string
           description: Короткий URL
-          example: "/hotaction"
-        full:
+          example: "hotaction"
+        redirectUrl:
           type: string
           description: Полный URL
           example: "shop.com/items?param1=somevalue1&param2=somevalue2&param3=somevalue3"
@@ -411,4 +574,30 @@ components:
       schema:
         type: string
         description: Поиск в виде строки 
-    https://app.swaggerhub.com/apis/VantagePoint/PrivCloud-API/0.0.9#/User
+    fields:
+      name: fields
+      description: Поля схемы для включения, иначе вce
+      example: ["id","email"]
+      in: query
+      required: false
+      schema:
+        type: array
+        items:
+          type: string
+          description: Поля объекта
+    urlId:
+      name: urlId
+      in: path
+      description: Уникальный идентификатор короткой ссылки
+      required: true
+      schema:
+        type: string
+        minimum: 1
+    redirectURL:
+      name: redirectURL
+      in: query
+      description: полный URL, на котрый будет происходить переадресация
+      required: true
+      schema:
+        type: string
+        minimum: 0
