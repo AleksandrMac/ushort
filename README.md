@@ -33,3 +33,6 @@
 Запуск производить из корневого каталога проекта
 
     go run cmd/ushort/main.go
+
+# Configuration
+Настройки хранятся в формате YAML, в файле /config.yaml

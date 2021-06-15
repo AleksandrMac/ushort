@@ -9,12 +9,12 @@ import (
 )
 
 type Server struct {
-	Port    int64 `yaml:"port"`
-	TimeOut int64 `yaml:"timeOut"`
+	Port    string `yaml:"port"`
+	TimeOut int64  `yaml:"timeOut"`
 }
 
 func (s Server) String() string {
-	return fmt.Sprintf("\n  Port: %d\n  TimeOut: %ds\n", s.Port, s.TimeOut)
+	return fmt.Sprintf("\n  Port: %s\n  TimeOut: %ds\n", s.Port, s.TimeOut)
 }
 
 type Config struct {

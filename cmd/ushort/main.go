@@ -1,10 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/AleksandrMac/ushort/pkg/config"
+	"github.com/go-chi/chi/v5"
 )
 
 func main() {
@@ -17,5 +18,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(conf)
+
+	router := chi.NewRouter()
+	if err = http.ListenAndServe(conf.Server.Port, router); err != nil {
+		log.Fatal(err)
+	}
 }
