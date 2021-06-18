@@ -7,6 +7,8 @@ func DataSourceParam(db *config.DB) string {
 	param := "?"
 	if len(db.SslMode) > 0 {
 		param += "sslmode=" + db.SslMode + "&"
+	} else {
+		param += "sslmode=disable&"
 	}
 	if len(db.TimeZone) > 0 {
 		param += "timezone=" + db.TimeZone + "&"
