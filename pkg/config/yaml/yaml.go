@@ -9,12 +9,12 @@ import (
 )
 
 func New(path string) (*config.Config, error) {
-	config := new(config.Config)
+	conf := new(config.Config)
 	configFileName := path
 	if buf, err := ioutil.ReadFile(configFileName); err != nil {
 		return nil, err
-	} else if err := yaml.Unmarshal(buf, &config); err != nil {
+	} else if err := yaml.Unmarshal(buf, &conf); err != nil {
 		return nil, err
 	}
-	return config, nil
+	return conf, nil
 }

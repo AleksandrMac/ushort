@@ -6,9 +6,9 @@ import (
 )
 
 func New() (*config.Config, error) {
-	config := new(config.Config)
-	if err := env.Parse(config); err != nil {
+	conf := new(config.Config)
+	if err := env.Parse(conf); err != nil {
 		return nil, err
 	}
-	return config, nil
+	return conf, nil
 }

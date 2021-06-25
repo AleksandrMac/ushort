@@ -9,24 +9,14 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/jmoiron/sqlx"
+	// Регистрация диалекта БД
 	_ "github.com/lib/pq"
 )
 
 type User struct {
-	Id       uuid.UUID `db:"id"`
+	ID       uuid.UUID `db:"id"`
 	Email    string    `db:"email"`
 	Password string    `db:"password"`
-}
-
-var shemas = map[string]string{
-	"insert": `INSERT INTO user
-	(id, email, password)
-	VALUES ($1, $2, $3);`,
-	"update": `UPDATE user
-	SET  email = value1, column2 = value2, ...
-	WHERE id = ;`,
-	"delete": ``,
-	"select": ``,
 }
 
 func New() User {
@@ -34,6 +24,7 @@ func New() User {
 }
 
 func CreateTable(c *config.DB) error {
+	// nolint:lll // ложное срабатывание из за большого количества параметров при формировании url
 	db, err := sqlx.Connect(c.Driver, fmt.Sprintf("postgres://%s:%s@%s:%s/%s%s", c.User, c.Password, c.Host, c.Port, c.Name, models.DataSourceParam(c)))
 	if err != nil {
 		return err
@@ -44,7 +35,7 @@ func CreateTable(c *config.DB) error {
 		}
 	}()
 	// если таблица отсутствует, то создаем новую, иначе добавляем новые столбцы, либо обновлям
-	rows, err := db.Query(`SELECT * FROM INFORMATION_SCHEMA.TABLES 
+	rows, err := db.Query(`SELECT * FROM INFORMATION_SCHEMA.TABLES
 WHERE TABLE_SCHEMA = 'public'
 AND  TABLE_NAME = 'users'`)
 	if err != nil {
@@ -75,6 +66,7 @@ password text NOT NULL);`); err != nil {
 }
 
 func (u *User) Insert(c *config.DB) (uuid.UUID, error) {
+	// nolint:lll // ложное срабатывание из за большого количества параметров при формировании url
 	db, err := sqlx.Connect(c.Driver, fmt.Sprintf("postgres://%s:%s@%s:%s/%s%s", c.User, c.Password, c.Host, c.Port, c.Name, models.DataSourceParam(c)))
 	if err != nil {
 		return uuid.UUID{}, err
@@ -84,16 +76,17 @@ func (u *User) Insert(c *config.DB) (uuid.UUID, error) {
 			log.Fatal(err)
 		}
 	}()
-	u.Id = uuid.New()
+	u.ID = uuid.New()
 	_, err = db.NamedExec(`INSERT INTO "public"."users" ("id","email","password")
 	VALUES (:id, :email, :password);`, u)
 	if err != nil {
 		return uuid.UUID{}, err
 	}
-	return u.Id, nil
+	return u.ID, nil
 }
 
 func Select(c *config.DB) (*[]User, error) {
+	// nolint:lll // ложное срабатывание из за большого количества параметров при формировании url
 	db, err := sqlx.Connect(c.Driver, fmt.Sprintf("postgres://%s:%s@%s:%s/%s%s", c.User, c.Password, c.Host, c.Port, c.Name, models.DataSourceParam(c)))
 	if err != nil {
 		return nil, err
@@ -112,6 +105,7 @@ func Select(c *config.DB) (*[]User, error) {
 }
 
 func (u *User) SelectWithID(c *config.DB) (*User, error) {
+	// nolint:lll // ложное срабатывание из за большого количества параметров при формировании url
 	db, err := sqlx.Connect(c.Driver, fmt.Sprintf("postgres://%s:%s@%s:%s/%s%s", c.User, c.Password, c.Host, c.Port, c.Name, models.DataSourceParam(c)))
 	if err != nil {
 		return nil, err
@@ -122,7 +116,7 @@ func (u *User) SelectWithID(c *config.DB) (*User, error) {
 		}
 	}()
 	user := User{}
-	err = db.Get(&user, `SELECT * FROM users WHERE id=$1;`, u.Id)
+	err = db.Get(&user, `SELECT * FROM users WHERE id=$1;`, u.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -130,6 +124,7 @@ func (u *User) SelectWithID(c *config.DB) (*User, error) {
 }
 
 func (u *User) Delete(c *config.DB) error {
+	// nolint:lll // ложное срабатывание из за большого количества параметров при формировании url
 	db, err := sqlx.Connect(c.Driver, fmt.Sprintf("postgres://%s:%s@%s:%s/%s%s", c.User, c.Password, c.Host, c.Port, c.Name, models.DataSourceParam(c)))
 	if err != nil {
 		return err
@@ -139,7 +134,7 @@ func (u *User) Delete(c *config.DB) error {
 			log.Fatal(err)
 		}
 	}()
-	_, err = db.Exec(`DELETE FROM user WHERE id=$1;`, u.Id.String())
+	_, err = db.Exec(`DELETE FROM user WHERE id=$1;`, u.ID.String())
 	if err != nil {
 		return err
 	}

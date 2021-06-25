@@ -22,7 +22,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(c)
+	fmt.Printf("%+v", c)
 
 	r := chi.NewRouter()
 	h.SetHandlers(r)

@@ -1,16 +1,8 @@
 package config
 
-import (
-	"fmt"
-)
-
 type Server struct {
 	Port    string `yaml:"Port" env:"SERVER_PORT" envDefault:"8000"`
 	TimeOut int64  `yaml:"TimeOut" env:"SERVER_TIMEOUT" envDefault:"30"`
-}
-
-func (s Server) String() string {
-	return fmt.Sprintf("\n  Port: %s\n  TimeOut: %ds", s.Port, s.TimeOut)
 }
 
 type DB struct {
@@ -24,23 +16,7 @@ type DB struct {
 	TimeZone string `yaml:"timeZone" env:"DB_TIMEZONE" envDefault:"Europe/Moscow"`
 }
 
-func (db DB) String() string {
-	return fmt.Sprintf(`
-  Driver: %v
-  Name: %v
-  Host: %v
-  Port: %v
-  User: %v
-  Password: %v
-  SslMode: %v
-  TimeZone: %v`, db.Driver, db.Name, db.Host, db.Port, db.User, db.Password, db.SslMode, db.TimeZone)
-}
-
 type Config struct {
 	Server Server `yaml:"Server"`
 	DB     DB     `yaml:"DB"`
-}
-
-func (c Config) String() string {
-	return fmt.Sprintf("Server: %v\nDB: %+v", c.Server, c.DB)
 }
