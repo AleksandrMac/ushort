@@ -20,3 +20,7 @@ type Config struct {
 	Server Server `yaml:"Server"`
 	DB     DB     `yaml:"DB"`
 }
+
+func New() *Config {
+	return new(Config)
+}
