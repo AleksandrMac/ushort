@@ -2,14 +2,11 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
-
-	"gopkg.in/yaml.v2"
 )
 
 type Server struct {
-	Port    string `yaml:"Port"`
-	TimeOut int64  `yaml:"TimeOut"`
+	Port    string `yaml:"Port" env:"SERVER_PORT" envDefault:"8000"`
+	TimeOut int64  `yaml:"TimeOut" env:"SERVER_TIMEOUT" envDefault:"30"`
 }
 
 func (s Server) String() string {
@@ -17,14 +14,14 @@ func (s Server) String() string {
 }
 
 type DB struct {
-	Driver   string `yaml:"driver"`
-	Name     string `yaml:"name"`
-	Host     string `yaml:"host"`
-	Port     string `yaml:"port"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	SslMode  string `yaml:"sslMode"`
-	TimeZone string `yaml:"timeZone"`
+	Driver   string `yaml:"driver" env:"DB_DRIVER" envDefault:"postgres"`
+	Name     string `yaml:"name" env:"DB_NAME" envDefault:"ushort"`
+	Host     string `yaml:"host" env:"DB_HOST" envDefault:"localhost"`
+	Port     string `yaml:"port" env:"DB_PORT" envDefault:"5432"`
+	User     string `yaml:"user" env:"DB_USER" envDefault:"postgres"`
+	Password string `yaml:"password" env:"DB_PASSWORD,unset"`
+	SslMode  string `yaml:"sslMode" env:"DB_SSLMODE" envDefault:"disable"`
+	TimeZone string `yaml:"timeZone" env:"DB_TIMEZONE" envDefault:"Europe/Moscow"`
 }
 
 func (db DB) String() string {
@@ -46,15 +43,4 @@ type Config struct {
 
 func (c Config) String() string {
 	return fmt.Sprintf("Server: %v\nDB: %+v", c.Server, c.DB)
-}
-
-func New(path string) (*Config, error) {
-	config := new(Config)
-	configFileName := path
-	if buf, err := ioutil.ReadFile(configFileName); err != nil {
-		return nil, err
-	} else if err := yaml.Unmarshal(buf, &config); err != nil {
-		return nil, err
-	}
-	return config, nil
 }
