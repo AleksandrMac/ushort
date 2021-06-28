@@ -10,3 +10,5 @@ require (
 	github.com/lib/pq v1.10.2
 	gopkg.in/yaml.v2 v2.4.0
 )
+
+// +heroku goVersion go1.16 install ./cmd/ushort/ ./bin/ushort
