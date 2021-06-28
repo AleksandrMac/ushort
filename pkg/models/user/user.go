@@ -1,11 +1,9 @@
 package user
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/AleksandrMac/ushort/pkg/config"
-	"github.com/AleksandrMac/ushort/pkg/models"
 	"github.com/google/uuid"
 
 	"github.com/jmoiron/sqlx"
@@ -24,8 +22,7 @@ func New() User {
 }
 
 func CreateTable(c *config.DB) error {
-	// nolint:lll // ложное срабатывание из за большого количества параметров при формировании url
-	db, err := sqlx.Connect(c.Driver, fmt.Sprintf("postgres://%s:%s@%s:%s/%s%s", c.User, c.Password, c.Host, c.Port, c.Name, models.DataSourceParam(c)))
+	db, err := sqlx.Connect("postgres", c.URL)
 	if err != nil {
 		return err
 	}
@@ -66,8 +63,7 @@ password text NOT NULL);`); err != nil {
 }
 
 func (u *User) Insert(c *config.DB) (uuid.UUID, error) {
-	// nolint:lll // ложное срабатывание из за большого количества параметров при формировании url
-	db, err := sqlx.Connect(c.Driver, fmt.Sprintf("postgres://%s:%s@%s:%s/%s%s", c.User, c.Password, c.Host, c.Port, c.Name, models.DataSourceParam(c)))
+	db, err := sqlx.Connect("postgres", c.URL)
 	if err != nil {
 		return uuid.UUID{}, err
 	}
@@ -86,8 +82,7 @@ func (u *User) Insert(c *config.DB) (uuid.UUID, error) {
 }
 
 func Select(c *config.DB) (*[]User, error) {
-	// nolint:lll // ложное срабатывание из за большого количества параметров при формировании url
-	db, err := sqlx.Connect(c.Driver, fmt.Sprintf("postgres://%s:%s@%s:%s/%s%s", c.User, c.Password, c.Host, c.Port, c.Name, models.DataSourceParam(c)))
+	db, err := sqlx.Connect("postgres", c.URL)
 	if err != nil {
 		return nil, err
 	}
@@ -105,8 +100,7 @@ func Select(c *config.DB) (*[]User, error) {
 }
 
 func (u *User) SelectWithID(c *config.DB) (*User, error) {
-	// nolint:lll // ложное срабатывание из за большого количества параметров при формировании url
-	db, err := sqlx.Connect(c.Driver, fmt.Sprintf("postgres://%s:%s@%s:%s/%s%s", c.User, c.Password, c.Host, c.Port, c.Name, models.DataSourceParam(c)))
+	db, err := sqlx.Connect("postgres", c.URL)
 	if err != nil {
 		return nil, err
 	}
@@ -124,8 +118,7 @@ func (u *User) SelectWithID(c *config.DB) (*User, error) {
 }
 
 func (u *User) Delete(c *config.DB) error {
-	// nolint:lll // ложное срабатывание из за большого количества параметров при формировании url
-	db, err := sqlx.Connect(c.Driver, fmt.Sprintf("postgres://%s:%s@%s:%s/%s%s", c.User, c.Password, c.Host, c.Port, c.Name, models.DataSourceParam(c)))
+	db, err := sqlx.Connect("postgres", c.URL)
 	if err != nil {
 		return err
 	}

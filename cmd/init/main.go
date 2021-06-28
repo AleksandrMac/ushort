@@ -1,8 +1,7 @@
+// nolint
 package main
 
 import (
-	"log"
-
 	"github.com/AleksandrMac/ushort/pkg/config"
 )
 
@@ -12,8 +11,14 @@ var (
 )
 
 func main() {
-	c, err = config.New("config.yaml")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// c, err = config.New("config.yaml")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// err = user.CreateTable(&c.DB)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
 }
