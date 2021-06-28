@@ -1,1 +1,1 @@
-web: /bin/ushort
+web: ./bin/ushort
