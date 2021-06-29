@@ -11,4 +11,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-// +heroku goVersion go1.16 install ./cmd/ushort
+// +heroku goVersion go1.16 install ./cmd/ushort ./bin/ushort
