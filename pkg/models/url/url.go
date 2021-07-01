@@ -33,9 +33,14 @@ func Select(userID string, db *models.DB) (*[]URL, error) {
 	return urls, nil
 }
 
-func SelectWithID(id string, db *models.DB) (*URL, error) {
-	url := &URL{}
-	err := db.Get(url, `SELECT * FROM url WHERE id=$1;`, id)
+func SelectWithID(urlID, userID string, db *models.DB) (url *URL, err error) {
+	url = &URL{}
+	switch userID {
+	case "*":
+		err = db.Get(url, `SELECT * FROM url WHERE id=$1;`, urlID)
+	default:
+		err = db.Get(url, `SELECT * FROM url WHERE id=$1 AND user_id=$2;`, urlID, userID)
+	}
 	if err != nil {
 		return nil, err
 	}

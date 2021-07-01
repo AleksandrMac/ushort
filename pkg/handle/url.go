@@ -30,8 +30,8 @@ func (h *Handler) setURLHandlers(r *chi.Mux) {
 			r.Post("/", h.createURL)
 			r.Get("/generate", h.generateURL)
 
-			r.Route("/{urlId}", func(r chi.Router) {
-				r.Get("/", getURL)
+			r.Route("/{urlID}", func(r chi.Router) {
+				r.Get("/", h.getURL)
 				r.Patch("/", updateURL)
 				r.Delete("/", deleteURL)
 			})
@@ -41,7 +41,7 @@ func (h *Handler) setURLHandlers(r *chi.Mux) {
 
 func (h *Handler) redirectTo(w http.ResponseWriter, r *http.Request) {
 	urlID := chi.URLParam(r, "urlID")
-	urlFormDB, err := url.SelectWithID(urlID, h.Env.DB)
+	urlFormDB, err := url.SelectWithID(urlID, "*", h.Env.DB)
 	if err != nil {
 		if err == models.SQLResult[models.NoResult] {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
@@ -56,7 +56,7 @@ func (h *Handler) redirectTo(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) urlList(w http.ResponseWriter, r *http.Request) {
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil {
-		log.Default().Printf("CreateURL: %v\n", err)
+		log.Default().Printf("urlList: %v\n", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -115,13 +115,41 @@ func (h *Handler) createURL(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 }
-func getURL(w http.ResponseWriter, r *http.Request)    {}
+func (h *Handler) getURL(w http.ResponseWriter, r *http.Request) {
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil {
+		log.Default().Printf("getURL: %v\n", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	urlID := chi.URLParam(r, "urlID")
+	urlFromDB, err := url.SelectWithID(urlID, claims["user_id"].(string), h.Env.DB)
+	if err != nil {
+		if err != nil {
+			log.Default().Printf("getURL: %v\n", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	response, err := json.Marshal(urlFromDB)
+	if err != nil {
+		log.Default().Printf("getURL: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(response)
+	if err != nil {
+		log.Default().Printf("getURL: %v", err)
+	}
+}
 func updateURL(w http.ResponseWriter, r *http.Request) {}
 func deleteURL(w http.ResponseWriter, r *http.Request) {}
 func (h *Handler) generateURL(w http.ResponseWriter, r *http.Request) {
 	for {
 		newURL := utils.RandString(h.Env.Config.LengthURL)
-		urlFromDB, err := url.SelectWithID(newURL, h.Env.DB)
+		urlFromDB, err := url.SelectWithID(newURL, "*", h.Env.DB)
 		if err != nil {
 			log.Default().Println(err)
 			if err.Error() != "sql: no rows in result set" {
