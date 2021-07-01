@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS usersdfsdf(
+CREATE TABLE IF NOT EXISTS public.user(
     id uuid,
     email text,
     password text NOT NULL,
@@ -8,5 +8,5 @@ CREATE TABLE IF NOT EXISTS usersdfsdf(
     CONSTRAINT email UNIQUE (email)
 );
 
-ALTER TABLE usersdfsdf
+ALTER TABLE public.user
     OWNER to "db-user";

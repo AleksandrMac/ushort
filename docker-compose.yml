@@ -35,7 +35,9 @@ services:
     ports:
       - 5432:5432
     environment: 
-      - DATABASE_URL=postgres://db-user:db-password@localhost:5432/ushort?sslmode=disable"
+      # - DATABASE_URL=postgres://db-user:db-password@localhost:5432/ushort?sslmode=disable"
+      - POSTGRES_USER=db-user
+      - POSTGRES_PASSWORD=db-password
     healthcheck:
       test: PGPASSWORD='db-password' psql -U db-user --command='SELECT 1'
       interval: 1s

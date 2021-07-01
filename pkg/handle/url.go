@@ -6,8 +6,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func setURLHandlers(r *chi.Mux) {
-	r.Get("/{urlId}", redirectTo)
+func (env *Env) setURLHandlers(r *chi.Mux) {
+	r.Get("/{urlId}", env.redirectTo)
 
 	r.Route("/url", func(r chi.Router) {
 		r.Get("/", urlList)
@@ -22,10 +22,10 @@ func setURLHandlers(r *chi.Mux) {
 	})
 }
 
-func redirectTo(w http.ResponseWriter, r *http.Request)  {}
-func urlList(w http.ResponseWriter, r *http.Request)     {}
-func createURL(w http.ResponseWriter, r *http.Request)   {}
-func url(w http.ResponseWriter, r *http.Request)         {}
-func updateURL(w http.ResponseWriter, r *http.Request)   {}
-func deleteURL(w http.ResponseWriter, r *http.Request)   {}
-func generateURL(w http.ResponseWriter, r *http.Request) {}
+func (env *Env) redirectTo(w http.ResponseWriter, r *http.Request) {}
+func urlList(w http.ResponseWriter, r *http.Request)               {}
+func createURL(w http.ResponseWriter, r *http.Request)             {}
+func url(w http.ResponseWriter, r *http.Request)                   {}
+func updateURL(w http.ResponseWriter, r *http.Request)             {}
+func deleteURL(w http.ResponseWriter, r *http.Request)             {}
+func generateURL(w http.ResponseWriter, r *http.Request)           {}

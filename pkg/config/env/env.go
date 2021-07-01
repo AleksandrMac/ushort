@@ -6,7 +6,10 @@ import (
 )
 
 func New() (*config.Config, error) {
-	conf := new(config.Config)
+	conf, err := config.New()
+	if err != nil {
+		return nil, err
+	}
 	if err := env.Parse(conf); err != nil {
 		return nil, err
 	}

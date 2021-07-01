@@ -1,19 +1,20 @@
 package handle
 
 import (
-	"log"
-	"net/http"
-
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/jwtauth/v5"
+
+	"github.com/AleksandrMac/ushort/pkg/config"
+	"github.com/AleksandrMac/ushort/pkg/models"
 )
 
-func SetHandlers(r *chi.Mux) {
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		if _, err := w.Write([]byte("Hello")); err != nil {
-			log.Fatal(err)
-		}
-	})
-	setAuthHandlers(r)
-	setUserHandlers(r)
-	setURLHandlers(r)
+type Env struct {
+	DB        *models.DB
+	Config    *config.Config
+	TokenAuth *jwtauth.JWTAuth
+}
+
+func (env *Env) SetHandlers(r *chi.Mux) {
+	env.setAuthHandlers(r)
+	env.setURLHandlers(r)
 }

@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/AleksandrMac/ushort/pkg/config"
+	"github.com/AleksandrMac/ushort/pkg/models"
 	"github.com/google/uuid"
 
 	"github.com/jmoiron/sqlx"
@@ -12,68 +13,59 @@ import (
 )
 
 type User struct {
-	ID       uuid.UUID `db:"id"`
-	Email    string    `db:"email"`
-	Password string    `db:"password"`
+	ID       uuid.UUID `db:"id" json:"uuid"`
+	Email    string    `db:"email" json:"email"`
+	Password string    `db:"password" json:"password"`
 }
 
 func New() User {
 	return User{}
 }
 
-func CreateTable(c *config.DB) error {
-	db, err := sqlx.Connect("postgres", c.URL)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err = db.Close(); err != nil {
-			log.Fatal(err)
-		}
-	}()
-	// если таблица отсутствует, то создаем новую, иначе добавляем новые столбцы, либо обновлям
-	rows, err := db.Query(`SELECT * FROM INFORMATION_SCHEMA.TABLES
-WHERE TABLE_SCHEMA = 'public'
-AND  TABLE_NAME = 'users'`)
-	if err != nil {
-		return err
-	}
-	if rows.Next() {
-		if _, err = db.Exec(`ALTER TABLE users
-ADD COLUMN IF NOT EXISTS id uuid CONSTRAINT user_id PRIMARY KEY,
-ADD COLUMN IF NOT EXISTS email text CONSTRAINT email UNIQUE,
-ADD COLUMN IF NOT EXISTS password text;
-ALTER TABLE users
-ALTER COLUMN email SET DATA TYPE text,
-ALTER COLUMN email SET NOT NULL,
-ALTER COLUMN password SET DATA TYPE text,
-ALTER COLUMN password SET NOT NULL;`); err != nil {
-			return err
-		}
-	} else {
-		if _, err = db.Exec(`
-CREATE TABLE users (
-id uuid CONSTRAINT user_id PRIMARY KEY,
-email text NOT NULL,
-password text NOT NULL);`); err != nil {
-			return err
-		}
-	}
-	return nil
-}
+// func CreateTable(c *config.DB) error {
+// 	db, err := sqlx.Connect("postgres", c.URL)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer func() {
+// 		if err = db.Close(); err != nil {
+// 			log.Fatal(err)
+// 		}
+// 	}()
+// 	// если таблица отсутствует, то создаем новую, иначе добавляем новые столбцы, либо обновлям
+// 	rows, err := db.Query(`SELECT * FROM INFORMATION_SCHEMA.TABLES
+// WHERE TABLE_SCHEMA = 'public'
+// AND  TABLE_NAME = 'users'`)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if rows.Next() {
+// 		if _, err = db.Exec(`ALTER TABLE users
+// ADD COLUMN IF NOT EXISTS id uuid CONSTRAINT user_id PRIMARY KEY,
+// ADD COLUMN IF NOT EXISTS email text CONSTRAINT email UNIQUE,
+// ADD COLUMN IF NOT EXISTS password text;
+// ALTER TABLE users
+// ALTER COLUMN email SET DATA TYPE text,
+// ALTER COLUMN email SET NOT NULL,
+// ALTER COLUMN password SET DATA TYPE text,
+// ALTER COLUMN password SET NOT NULL;`); err != nil {
+// 			return err
+// 		}
+// 	} else {
+// 		if _, err = db.Exec(`
+// CREATE TABLE users (
+// id uuid CONSTRAINT user_id PRIMARY KEY,
+// email text NOT NULL,
+// password text NOT NULL);`); err != nil {
+// 			return err
+// 		}
+// 	}
+// 	return nil
+// }
 
-func (u *User) Insert(c *config.DB) (uuid.UUID, error) {
-	db, err := sqlx.Connect("postgres", c.URL)
-	if err != nil {
-		return uuid.UUID{}, err
-	}
-	defer func() {
-		if err = db.Close(); err != nil {
-			log.Fatal(err)
-		}
-	}()
+func (u *User) Insert(db *models.DB) (uuid.UUID, error) {
 	u.ID = uuid.New()
-	_, err = db.NamedExec(`INSERT INTO "public"."users" ("id","email","password")
+	_, err := db.NamedExec(`INSERT INTO "public"."users" ("id","email","password")
 	VALUES (:id, :email, :password);`, u)
 	if err != nil {
 		return uuid.UUID{}, err
@@ -115,6 +107,14 @@ func (u *User) SelectWithID(c *config.DB) (*User, error) {
 		return nil, err
 	}
 	return &user, nil
+}
+func SelectWithEmail(email string, db *models.DB) (*User, error) {
+	user := new(User)
+	err := db.DB.Get(user, `SELECT * FROM users WHERE email=$1;`, email)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 func (u *User) Delete(c *config.DB) error {

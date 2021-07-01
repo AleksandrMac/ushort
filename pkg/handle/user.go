@@ -1,30 +1,27 @@
 package handle
 
-import (
-	"net/http"
+// func (env *Env) setUserHandlers(r *chi.Mux) {
+// 	r.Route("/user", func(r chi.Router) {
+// 		r.Get("/", env.userList)
+// 		r.Post("/", env.createUser)
 
-	"github.com/go-chi/chi/v5"
-)
+// 		r.Route("/{userId}", func(r chi.Router) {
+// 			r.Get("/", env.getUser)
+// 			r.Patch("/", env.updateUser)
+// 			r.Delete("/", env.deleteUser)
+// 			r.Post("/", env.createUserToken)
+// 			r.Delete("/{api_key}", env.deleteUserToken)
+// 		})
+// 	})
+// }
 
-func setUserHandlers(r *chi.Mux) {
-	r.Route("/user", func(r chi.Router) {
-		r.Get("/", userList)
-		r.Post("/", createUser)
+// func (env *Env) userList(w http.ResponseWriter, r *http.Request) {
+// }
+// func (env *Env) createUser(w http.ResponseWriter, r *http.Request) {
 
-		r.Route("/{userId}", func(r chi.Router) {
-			r.Get("/", user)
-			r.Patch("/", updateUser)
-			r.Delete("/", deleteUser)
-			r.Post("/", createUserToken)
-			r.Delete("/{api_key}", deleteUserToken)
-		})
-	})
-}
-
-func userList(w http.ResponseWriter, r *http.Request)        {}
-func createUser(w http.ResponseWriter, r *http.Request)      {}
-func user(w http.ResponseWriter, r *http.Request)            {}
-func deleteUser(w http.ResponseWriter, r *http.Request)      {}
-func updateUser(w http.ResponseWriter, r *http.Request)      {}
-func createUserToken(w http.ResponseWriter, r *http.Request) {}
-func deleteUserToken(w http.ResponseWriter, r *http.Request) {}
+// }
+// func (env *Env) getUser(w http.ResponseWriter, r *http.Request)         {}
+// func (env *Env) deleteUser(w http.ResponseWriter, r *http.Request)      {}
+// func (env *Env) updateUser(w http.ResponseWriter, r *http.Request)      {}
+// func (env *Env) createUserToken(w http.ResponseWriter, r *http.Request) {}
+// func (env *Env) deleteUserToken(w http.ResponseWriter, r *http.Request) {}
