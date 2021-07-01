@@ -4,6 +4,9 @@ import (
 	"io/ioutil"
 	"log"
 	"path/filepath"
+
+	"github.com/AleksandrMac/ushort/pkg/models"
+	"github.com/go-chi/jwtauth/v5"
 )
 
 type Server struct {
@@ -37,6 +40,12 @@ type Config struct {
 	// TmpURLLifeTime - время резервации сгенерированной ссылки
 	TmpURLLifeTime int64 `yaml:"TmpURLLifeTime" env:"TMPURL_LIFE_TIME" envDefault:"60"` // second
 	LengthURL      int64 `yaml:"LengthURL" env:"LENGTH_URL" envDefault:"10"`            // second
+}
+
+type Env struct {
+	DB        *models.DB
+	Config    *Config
+	TokenAuth *jwtauth.JWTAuth
 }
 
 func New() (*Config, error) {

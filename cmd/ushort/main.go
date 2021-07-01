@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/AleksandrMac/ushort/pkg/config"
 	"github.com/AleksandrMac/ushort/pkg/config/env"
 	"github.com/AleksandrMac/ushort/pkg/handle"
 	"github.com/AleksandrMac/ushort/pkg/models"
@@ -28,10 +29,12 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	h := &handle.Env{
-		DB:        db,
-		Config:    cfg,
-		TokenAuth: jwtauth.New("HS256", cfg.Auth.PrivateKey, nil),
+	h := &handle.Handler{
+		Env: &config.Env{
+			DB:        db,
+			Config:    cfg,
+			TokenAuth: jwtauth.New("HS256", cfg.Auth.PrivateKey, nil),
+		},
 	}
 
 	logger := httplog.NewLogger("httplog-example", httplog.Options{
