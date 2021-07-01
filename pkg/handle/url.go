@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/AleksandrMac/ushort/pkg/models"
 	"github.com/AleksandrMac/ushort/pkg/models/url"
 	"github.com/AleksandrMac/ushort/pkg/utils"
 	"github.com/go-chi/chi/v5"
@@ -17,7 +18,7 @@ var tmpURL map[string]time.Time
 
 func (h *Handler) setURLHandlers(r *chi.Mux) {
 	tmpURL = make(map[string]time.Time)
-	r.Get("/{urlId}", h.redirectTo)
+	r.Get("/{urlID}", h.redirectTo)
 
 	r.Group(func(r chi.Router) {
 		r.Use(jwtauth.Verifier(h.Env.TokenAuth))
@@ -37,8 +38,21 @@ func (h *Handler) setURLHandlers(r *chi.Mux) {
 	})
 }
 
-func (h *Handler) redirectTo(w http.ResponseWriter, r *http.Request) {}
-func urlList(w http.ResponseWriter, r *http.Request)                 {}
+func (h *Handler) redirectTo(w http.ResponseWriter, r *http.Request) {
+	urlID := chi.URLParam(r, "urlID")
+	urlFormDB, err := url.SelectWithID(urlID, h.Env.DB)
+	if err != nil {
+		if err == models.SQLResult[models.NoResult] {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+		log.Default().Printf("redirectTo: %v\n", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, urlFormDB.RedirectTo, http.StatusSeeOther)
+}
+func urlList(w http.ResponseWriter, r *http.Request) {}
 func (h *Handler) createURL(w http.ResponseWriter, r *http.Request) {
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil {
@@ -88,12 +102,12 @@ func (h *Handler) generateURL(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if urlFromDB != nil {
-			log.Default().Printf("Генерация URL: %s уже существует в БД\n", urlFromDB)
+			log.Default().Printf("generateURL: %s уже существует в БД\n", urlFromDB)
 			continue
 		}
 		if t, ok := tmpURL[newURL]; ok {
 			if time.Now().After(t) {
-				log.Default().Printf("Генерация URL: %s зарезервирован\n", newURL)
+				log.Default().Printf("generateURL: %s зарезервирован\n", newURL)
 				continue
 			}
 		}

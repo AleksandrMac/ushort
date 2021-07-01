@@ -1,12 +1,19 @@
 package models
 
 import (
-	"github.com/google/uuid"
+	"fmt"
+
 	"github.com/jmoiron/sqlx"
 )
 
-type DataStore interface {
-	Insert() (uuid.UUID, error)
+type SQLResponse uint8
+
+const (
+	NoResult SQLResponse = iota
+)
+
+var SQLResult = map[SQLResponse]error{
+	NoResult: fmt.Errorf("sql: no rows in result set"),
 }
 
 type DB struct {
