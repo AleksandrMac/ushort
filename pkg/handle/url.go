@@ -25,7 +25,7 @@ func (h *Handler) setURLHandlers(r *chi.Mux) {
 
 		r.Route("/url", func(r chi.Router) {
 			r.Get("/", urlList)
-			r.Post("/", createURL)
+			r.Post("/", h.createURL)
 			r.Get("/generate", h.generateURL)
 
 			r.Route("/{urlId}", func(r chi.Router) {
@@ -39,10 +39,43 @@ func (h *Handler) setURLHandlers(r *chi.Mux) {
 
 func (h *Handler) redirectTo(w http.ResponseWriter, r *http.Request) {}
 func urlList(w http.ResponseWriter, r *http.Request)                 {}
-func createURL(w http.ResponseWriter, r *http.Request)               {}
-func getURL(w http.ResponseWriter, r *http.Request)                  {}
-func updateURL(w http.ResponseWriter, r *http.Request)               {}
-func deleteURL(w http.ResponseWriter, r *http.Request)               {}
+func (h *Handler) createURL(w http.ResponseWriter, r *http.Request) {
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil {
+		log.Default().Printf("CreateURL: %v\n", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	newURL := &url.URL{
+		ID:          r.Header.Get("urlID"),
+		RedirectTo:  r.Header.Get("redirectTo"),
+		Description: r.Header.Get("description"),
+		UserID:      claims["user_id"].(string),
+	}
+
+	if newURL.ID == "" || newURL.RedirectTo == "" {
+		message := "CreateURL: поля urlID и redirectTo не могут быть пустыми"
+		log.Default().Println(message)
+		http.Error(w, message, http.StatusBadRequest)
+		return
+	}
+	if len(newURL.ID) > int(h.Env.Config.LengthURL) {
+		message := fmt.Sprintf("CreateURL: максимальная длина короткого urlID равна %d", h.Env.Config.LengthURL)
+		log.Default().Println(message)
+		http.Error(w, message, http.StatusBadRequest)
+		return
+	}
+	err = newURL.Insert(h.Env.DB)
+	if err != nil {
+		log.Default().Printf("CreateURL: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	w.WriteHeader(http.StatusOK)
+}
+func getURL(w http.ResponseWriter, r *http.Request)    {}
+func updateURL(w http.ResponseWriter, r *http.Request) {}
+func deleteURL(w http.ResponseWriter, r *http.Request) {}
 func (h *Handler) generateURL(w http.ResponseWriter, r *http.Request) {
 	for {
 		newURL := utils.RandString(h.Env.Config.LengthURL)

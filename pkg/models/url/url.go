@@ -4,8 +4,6 @@ import (
 	"time"
 
 	"github.com/AleksandrMac/ushort/pkg/models"
-
-	"github.com/google/uuid"
 )
 
 type URL struct {
@@ -14,7 +12,16 @@ type URL struct {
 	UpdatedAt   time.Time `db:"updated_at" json:"updates_at"`
 	RedirectTo  string    `db:"redirect_to" json:"redirect_to"`
 	Description string    `db:"description" json:"description"`
-	UserID      uuid.UUID `db:"user_id"`
+	UserID      string    `db:"user_id"`
+}
+
+func (u *URL) Insert(db *models.DB) error {
+	_, err := db.NamedExec(`INSERT INTO "public"."url" (id,redirect_to,description,user_id)
+	VALUES (:id, :redirect_to, :description, :user_id);`, u)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func SelectWithID(id string, db *models.DB) (*URL, error) {
