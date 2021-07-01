@@ -24,6 +24,15 @@ func (u *URL) Insert(db *models.DB) error {
 	return nil
 }
 
+func Select(userID string, db *models.DB) (*[]URL, error) {
+	urls := &[]URL{}
+	err := db.Select(urls, `SELECT * FROM url WHERE user_id=$1`, userID)
+	if err != nil {
+		return nil, err
+	}
+	return urls, nil
+}
+
 func SelectWithID(id string, db *models.DB) (*URL, error) {
 	url := &URL{}
 	err := db.Get(url, `SELECT * FROM url WHERE id=$1;`, id)

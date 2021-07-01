@@ -1,6 +1,7 @@
 package handle
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -25,7 +26,7 @@ func (h *Handler) setURLHandlers(r *chi.Mux) {
 		r.Use(jwtauth.Authenticator)
 
 		r.Route("/url", func(r chi.Router) {
-			r.Get("/", urlList)
+			r.Get("/", h.urlList)
 			r.Post("/", h.createURL)
 			r.Get("/generate", h.generateURL)
 
@@ -52,7 +53,34 @@ func (h *Handler) redirectTo(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Redirect(w, r, urlFormDB.RedirectTo, http.StatusSeeOther)
 }
-func urlList(w http.ResponseWriter, r *http.Request) {}
+func (h *Handler) urlList(w http.ResponseWriter, r *http.Request) {
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil {
+		log.Default().Printf("CreateURL: %v\n", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	urls, err := url.Select(claims["user_id"].(string), h.Env.DB)
+	if err != nil {
+		if err != nil {
+			log.Default().Printf("urlList: %v\n", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	buf, err := json.Marshal(urls)
+	if err != nil {
+		log.Default().Printf("urlList: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(buf)
+	if err != nil {
+		log.Default().Printf("urlList: %v", err)
+	}
+}
 func (h *Handler) createURL(w http.ResponseWriter, r *http.Request) {
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil {
@@ -114,7 +142,7 @@ func (h *Handler) generateURL(w http.ResponseWriter, r *http.Request) {
 		tmpURL[newURL] = time.Now().Add(time.Duration(h.Env.Config.TmpURLLifeTime))
 		w.Header().Add("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
-		if _, err := w.Write([]byte(fmt.Sprintf("{\"shortURL\": \"/%s\"}", newURL))); err != nil {
+		if _, err := w.Write([]byte(fmt.Sprintf("{\"shortURL\": \"%s\"}", newURL))); err != nil {
 			log.Default().Println(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
