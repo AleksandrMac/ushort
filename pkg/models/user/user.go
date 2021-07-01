@@ -5,9 +5,10 @@ import (
 
 	"github.com/AleksandrMac/ushort/pkg/config"
 	"github.com/AleksandrMac/ushort/pkg/models"
-	"github.com/google/uuid"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+
 	// Регистрация диалекта БД
 	_ "github.com/lib/pq"
 )

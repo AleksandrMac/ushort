@@ -34,6 +34,9 @@ type Config struct {
 	Server Server `yaml:"Server"`
 	DB     DB     `yaml:"DB"`
 	Auth   Auth   `yaml:"Auth"`
+	// TmpURLLifeTime - время резервации сгенерированной ссылки
+	TmpURLLifeTime int64 `yaml:"TmpURLLifeTime" env:"TMPURL_LIFE_TIME" envDefault:"60"` // second
+	LengthURL      int64 `yaml:"LengthURL" env:"LENGTH_URL" envDefault:"10"`            // second
 }
 
 func New() (*Config, error) {

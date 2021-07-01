@@ -96,7 +96,7 @@ func (env *Env) signIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, tokenString, err := env.TokenAuth.Encode(map[string]interface{}{"user_email": usr.Email})
+	_, tokenString, err := env.TokenAuth.Encode(map[string]interface{}{"user_id": usrFromDB.ID})
 	if err != nil {
 		log.Default().Println(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
