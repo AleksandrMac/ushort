@@ -1,4 +1,4 @@
-package handle
+package controller
 
 // func (env *Env) setUserHandlers(r *chi.Mux) {
 // 	r.Route("/user", func(r chi.Router) {

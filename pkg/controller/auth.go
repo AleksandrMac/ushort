@@ -1,4 +1,4 @@
-package handle
+package controller
 
 import (
 	"crypto/sha256"
@@ -9,8 +9,9 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth/v5"
+	"github.com/google/uuid"
 
-	"github.com/AleksandrMac/ushort/pkg/models/user"
+	"github.com/AleksandrMac/ushort/pkg/model"
 )
 
 type Claims struct {
@@ -18,26 +19,30 @@ type Claims struct {
 	UserEmail string
 }
 
-func (h *Handler) setAuthHandlers(r *chi.Mux) {
-	r.Post("/auth/sign-up", h.signUp)
-	r.Post("/auth/sign-in", h.signIn)
+func (c *Controller) setAuthControllers(r *chi.Mux) {
+	r.Post("/auth/sign-up", c.signUp)
+	r.Post("/auth/sign-in", c.signIn)
 
 	// protected routes
 	r.Group(func(r chi.Router) {
-		r.Use(jwtauth.Verifier(h.Env.TokenAuth))
+		r.Use(jwtauth.Verifier(c.TokenAuth))
 		r.Use(jwtauth.Authenticator)
-		r.Get("/auth/sign-out", h.signOut)
+		r.Get("/auth/sign-out", c.signOut)
 	})
 }
 
 // авторизация в данном экземпляре носить второстепенную роль
 // поэтому токен выдается без синхронизации с БД, и без даты истечения срока действия
 // вместо логаута заглушка
-func (h *Handler) signUp(w http.ResponseWriter, r *http.Request) {
-	usr := user.User{
+func (c *Controller) signUp(w http.ResponseWriter, r *http.Request) {
+	usr := model.User{
+		Model: model.Model{
+			ID: uuid.New().String(),
+		},
 		Email:    r.Header.Get("email"),
 		Password: r.Header.Get("password"),
 	}
+	// можно добавить проверку идентификатора на существование в БД
 
 	if usr.Email == "" || usr.Password == "" {
 		err := http.StatusText(http.StatusBadRequest)
@@ -47,7 +52,7 @@ func (h *Handler) signUp(w http.ResponseWriter, r *http.Request) {
 	}
 	usr.Password = fmt.Sprintf("%x", sha256.Sum256([]byte(usr.Password)))
 
-	id, err := usr.Insert(h.Env.DB)
+	err := usr.Insert(c.DB)
 	if err != nil {
 		switch err.Error() {
 		case `pq: повторяющееся значение ключа нарушает ограничение уникальности "email"`:
@@ -60,7 +65,7 @@ func (h *Handler) signUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	n, err := w.Write([]byte(fmt.Sprintf("{\"id\": %s}", id)))
+	n, err := w.Write([]byte(fmt.Sprintf("{\"id\": %s}", usr.ID)))
 	if err != nil {
 		log.Default().Println(err)
 		return
@@ -68,13 +73,13 @@ func (h *Handler) signUp(w http.ResponseWriter, r *http.Request) {
 	log.Default().Printf("Записано байт: %d\n", n)
 	http.Redirect(w, r, "/auth/sign-in", http.StatusSeeOther)
 }
-func (h *Handler) signIn(w http.ResponseWriter, r *http.Request) {
-	usr := user.User{
+func (c *Controller) signIn(w http.ResponseWriter, r *http.Request) {
+	usr := model.User{
 		Email:    r.Header.Get("email"),
 		Password: r.Header.Get("password"),
 	}
 
-	usrFromDB, err := user.SelectWithEmail(usr.Email, h.Env.DB)
+	usrFromDB, err := model.SelectWithEmail(usr.Email, c.DB)
 	if err != nil {
 		log.Default().Println(err)
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -96,7 +101,7 @@ func (h *Handler) signIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, tokenString, err := h.Env.TokenAuth.Encode(map[string]interface{}{"user_id": usrFromDB.ID})
+	_, tokenString, err := c.TokenAuth.Encode(map[string]interface{}{"user_id": usrFromDB.ID})
 	if err != nil {
 		log.Default().Println(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -105,6 +110,6 @@ func (h *Handler) signIn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Authorization", "BEARER "+tokenString)
 	w.WriteHeader(http.StatusOK)
 }
-func (h *Handler) signOut(w http.ResponseWriter, r *http.Request) {
+func (c *Controller) signOut(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
