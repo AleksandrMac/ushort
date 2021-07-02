@@ -3,6 +3,7 @@ package handle
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -28,11 +29,11 @@ func (h *Handler) setURLHandlers(r *chi.Mux) {
 		r.Route("/url", func(r chi.Router) {
 			r.Get("/", h.urlList)
 			r.Post("/", h.createURL)
+			r.Patch("/", h.updateURL)
 			r.Get("/generate", h.generateURL)
 
 			r.Route("/{urlID}", func(r chi.Router) {
 				r.Get("/", h.getURL)
-				r.Patch("/", updateURL)
 				r.Delete("/", deleteURL)
 			})
 		})
@@ -144,7 +145,46 @@ func (h *Handler) getURL(w http.ResponseWriter, r *http.Request) {
 		log.Default().Printf("getURL: %v", err)
 	}
 }
-func updateURL(w http.ResponseWriter, r *http.Request) {}
+func (h *Handler) updateURL(w http.ResponseWriter, r *http.Request) {
+	if r.Body == nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	requestBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Default().Printf("updateURL: %v\n", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil {
+		log.Default().Printf("updateURL: %v\n", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	urlFromBody := &url.URL{}
+	err = json.Unmarshal(requestBody, urlFromBody)
+	if err != nil {
+		log.Default().Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	urlFromBody.UserID = claims["user_id"].(string)
+
+	err = urlFromBody.Update(h.Env.DB)
+	if err != nil {
+		if err != nil {
+			log.Default().Printf("updateURL: %v\n", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	w.WriteHeader(http.StatusOK)
+}
 func deleteURL(w http.ResponseWriter, r *http.Request) {}
 func (h *Handler) generateURL(w http.ResponseWriter, r *http.Request) {
 	for {

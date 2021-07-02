@@ -7,10 +7,10 @@ import (
 )
 
 type URL struct {
-	ID          string    `db:"id" json:"id"`
-	CreatedAt   time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at" json:"updates_at"`
-	RedirectTo  string    `db:"redirect_to" json:"redirect_to"`
+	ID          string    `db:"id" json:"urlID"`
+	CreatedAt   time.Time `db:"created_at" json:"createdAt"`
+	UpdatedAt   time.Time `db:"updated_at" json:"updatedAt"`
+	RedirectTo  string    `db:"redirect_to" json:"redirectTo"`
 	Description string    `db:"description" json:"description"`
 	UserID      string    `db:"user_id"`
 }
@@ -22,6 +22,14 @@ func (u *URL) Insert(db *models.DB) error {
 		return err
 	}
 	return nil
+}
+
+func (u *URL) Update(db *models.DB) (err error) {
+	_, err = db.NamedExec(`UPDATE public.url
+    SET redirect_to=:redirect_to,
+		description=:description
+    WHERE id=:id AND user_id=:user_id;`, u)
+	return err
 }
 
 func Select(userID string, db *models.DB) (*[]URL, error) {
