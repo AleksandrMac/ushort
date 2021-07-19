@@ -1,85 +1,90 @@
 package model
 
 import (
-	"github.com/AleksandrMac/ushort/pkg/connect"
+	"encoding/json"
+	"fmt"
+	"reflect"
+
+	"github.com/AleksandrMac/ushort/pkg/utils"
+	"github.com/jmoiron/sqlx"
 
 	// Регистрация диалекта БД
 	_ "github.com/lib/pq"
 )
 
 type User struct {
-	Model
+	*sqlx.DB
+	Base
 	Email    string `db:"email" json:"email"`
 	Password string `db:"password" json:"password"`
 }
 
-func New() User {
-	return User{}
+func (u *User) Fields() ([]string, error) {
+	return utils.FieldsFromStruct(u)
 }
 
-func (u *User) Insert(db *connect.DB) error {
-	_, err := db.NamedExec(
-		`INSERT INTO "public"."users" ("id","email","password") VALUES (:id, :email, :password);`, u)
-	return err
-}
-
-// func Select(c *config.DB) (*[]User, error) {
-// 	db, err := sqlx.Connect("postgres", c.URL)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer func() {
-// 		if err = db.Close(); err != nil {
-// 			log.Fatal(err)
-// 		}
-// 	}()
-// 	users := []User{}
-// 	err = db.Select(&users, `SELECT * FROM users;`)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &users, nil
-// }
-
-// func (u *User) SelectWithID(c *config.DB) (*User, error) {
-// 	db, err := sqlx.Connect("postgres", c.URL)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer func() {
-// 		if err = db.Close(); err != nil {
-// 			log.Fatal(err)
-// 		}
-// 	}()
-// 	user := User{}
-// 	err = db.Get(&user, `SELECT * FROM users WHERE id=$1;`, u.ID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &user, nil
-// }
-func SelectWithEmail(email string, db *connect.DB) (*User, error) {
-	user := new(User)
-	err := db.DB.Get(user, `SELECT * FROM users WHERE email=$1;`, email)
+func (u *User) Values() (map[string]interface{}, error) {
+	fields, err := u.Fields()
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	out := make(map[string]interface{}, len(fields))
+	for _, val := range fields {
+		out[val] = u.Value(val)
+	}
+	return out, nil
 }
 
-// func (u *User) Delete(c *config.DB) error {
-// 	db, err := sqlx.Connect("postgres", c.URL)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer func() {
-// 		if err = db.Close(); err != nil {
-// 			log.Fatal(err)
-// 		}
-// 	}()
-// 	_, err = db.Exec(`DELETE FROM user WHERE id=$1;`, u.ID.String())
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
+func (u *User) Value(field string) interface{} {
+	return reflect.ValueOf(u).FieldByName(field).Interface()
+}
+
+func (u *User) SetValues(mapValues map[string]interface{}) error {
+	return utils.UpdateStruct(u, mapValues)
+}
+func (u *User) SetValue(field string, value interface{}) error {
+	return u.SetValues(map[string]interface{}{field: value})
+}
+func (u *User) JSON() ([]byte, error) {
+	return json.Marshal(u)
+}
+
+func (u *User) create() error {
+	_, err := u.NamedExec(
+		`INSERT INTO public.users (id,email,password) VALUES (:id, :email, :password);`, u)
+	return err
+}
+
+func (u *User) read() error {
+	if u.ID != "" {
+		err := u.Get(u, `SELECT * FROM public.users WHERE id=$1;`, u.ID)
+		return err
+	}
+
+	if u.Email != "" {
+		err := u.Get(u, `SELECT * FROM public.users WHERE email=$1;`, u.Email)
+		return err
+	}
+	return fmt.Errorf("missing field 'id' or 'email' in %T", u)
+}
+
+func (u *User) update() error {
+	_, err := u.NamedExec(`UPDATE public.users
+SET email=:email,
+password=:password
+WHERE id=:id;`, u)
+	return err
+}
+
+func (u *User) delete() error {
+	if u.ID != "" {
+		err := u.Get(u, `DELETE FROM public.users WHERE id=$1;`, u.ID)
+		return err
+	}
+
+	if u.Email != "" {
+		err := u.Get(u, `DELETE FROM public.users WHERE email=$1;`, u.Email)
+		return err
+	}
+	return fmt.Errorf("missing field 'id' or 'email' in %T", u)
+}

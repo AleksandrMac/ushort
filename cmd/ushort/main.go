@@ -10,94 +10,37 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/AleksandrMac/ushort/pkg/config/env"
-	"github.com/AleksandrMac/ushort/pkg/connect"
 	"github.com/AleksandrMac/ushort/pkg/controller"
-	"github.com/rs/zerolog"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httplog"
-	"github.com/go-chi/jwtauth/v5"
 )
 
 func main() {
-	cfg, err := env.New()
+	ctrl, err := controller.New()
 	if err != nil {
-		log.Panic(err)
-	}
-
-	var logger zerolog.Logger
-	switch cfg.LogLevel {
-	case "trace":
-		logger = httplog.NewLogger("ushort", httplog.Options{
-			LogLevel: "trace",
-			JSON:     true})
-	case "debug":
-		logger = httplog.NewLogger("ushort", httplog.Options{
-			LogLevel: "debug",
-			JSON:     true})
-	case "info":
-		logger = httplog.NewLogger("ushort", httplog.Options{
-			LogLevel: "info",
-			JSON:     true})
-	case "warn":
-		logger = httplog.NewLogger("ushort", httplog.Options{
-			LogLevel: "warn",
-			JSON:     true})
-	case "error":
-		logger = httplog.NewLogger("ushort", httplog.Options{
-			LogLevel: "error",
-			JSON:     true})
-	case "critical":
-		logger = httplog.NewLogger("ushort", httplog.Options{
-			LogLevel: "critical",
-			JSON:     true})
-	}
-
-	db, err := connect.NewDB(cfg.DB.URL)
-	if err != nil {
-		log.Panic(err)
-	}
-	ctxMain, cancelMain := context.WithCancel(context.Background())
-	defer cancelMain()
-
-	ctrl := &controller.Controller{
-		DB:        db,
-		Config:    cfg,
-		TokenAuth: jwtauth.New("HS256", cfg.Auth.PrivateKey, nil),
-		Logger:    &logger,
-		Info:      make(chan string),
-		Debug:     make(chan error),
-		Err:       make(chan error),
-		Critical:  make(chan error),
+		log.Fatal(err)
 	}
 
 	r := chi.NewRouter()
-	r.Use(httplog.RequestLogger(logger))
+	r.Use(httplog.RequestLogger(*ctrl.Logger))
 	ctrl.SetControllers(r)
 
+	ctxMain, cancelMain := context.WithCancel(context.Background())
+	defer cancelMain()
 	srv := &http.Server{
-		Addr:    cfg.Server.Port,
+		Addr:    ":" + ctrl.Config.Server.Port,
 		Handler: r,
 	}
 
 	go watchSignals(cancelMain, ctrl)
 
 	go func() {
-		ctrl.Err <- srv.ListenAndServe()
+		ctrl.Info <- "server starting"
+		ctrl.Critical <- srv.ListenAndServe()
 	}()
 
-	for {
-		select {
-		case <-ctxMain.Done():
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(ctrl.Config.ServerGraceFullTime)*time.Second)
-			ctrl.Err <- srv.Shutdown(ctx)
-			defer cancel()
-			return
-		case err := <-ctrl.Err:
-			logger.Error().Msg(err.Error())
-		}
-	}
+	ListenChan(ctxMain, ctrl, srv)
 }
 
 func watchSignals(cancel context.CancelFunc, ch *controller.Controller) {
@@ -109,8 +52,33 @@ func watchSignals(cancel context.CancelFunc, ch *controller.Controller) {
 		syscall.SIGTERM)
 	sig := <-osSignalChan
 	ch.Info <- fmt.Sprintf("got signal %q", sig.String())
-	ch.Info <- "Server stoped"
 
 	// если сигнал получен, отменяем контекст работы
 	cancel()
+}
+
+func ListenChan(ctx context.Context, ctrl *controller.Controller, srv *http.Server) {
+	for {
+		select {
+		case <-ctx.Done():
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(ctrl.Config.ServerGraceFullTime)*time.Second)
+			err := srv.Shutdown(ctx)
+			if err != nil {
+				ctrl.Logger.Err(err)
+			}
+			ctrl.Logger.Info().Msg("server stoped")
+			defer cancel()
+			return
+		case info := <-ctrl.Info:
+			ctrl.Logger.Info().Msg(info)
+		case deb := <-ctrl.Debug:
+			ctrl.Logger.Debug().Msg(deb.Error())
+		case err := <-ctrl.Err:
+			ctrl.Logger.Error().Msg(err.Error())
+		case err := <-ctrl.Warn:
+			ctrl.Logger.Error().Msg(err.Error())
+		case err := <-ctrl.Critical:
+			ctrl.Logger.Fatal().Msg(err.Error())
+		}
+	}
 }
