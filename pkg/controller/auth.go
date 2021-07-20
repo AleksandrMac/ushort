@@ -2,7 +2,6 @@ package controller
 
 import (
 	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -49,14 +48,14 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	usr, ok := c.DB.Model(model.UserTable).(*model.User)
-	if !ok {
-		c.Err <- fmt.Errorf("signUp-(*User): error convertation")
+	usr := c.DB.Model(model.TableUser)
+	if usr == nil {
+		c.Err <- fmt.Errorf("signUp-(*User): nil")
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
 
-	err = json.Unmarshal(requestBody, usr)
+	err = usr.FromJSON(requestBody)
 	if err != nil {
 		c.Debug <- fmt.Errorf("signUP: %w", err)
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
@@ -64,20 +63,30 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 	}
 	// можно добавить проверку идентификатора на существование в БД
 
-	if usr.Email == "" || usr.Password == "" {
+	pswd := usr.Value(model.DBFieldPassword).(string)
+
+	if usr.Value(model.DBFieldEmail) == "" || pswd == "" {
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
-	usr.Password = fmt.Sprintf("%x", sha256.Sum256([]byte(usr.Password)))
-	usr.ID = uuid.New().String()
+	if err = usr.SetValue(model.DBFieldPassword, fmt.Sprintf("%x", sha256.Sum256([]byte(pswd)))); err != nil {
+		c.Err <- fmt.Errorf("signUp-SetValue(password): %w", err)
+		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
+		return
+	}
+	if err = usr.SetValue(model.DBFieldID, uuid.New().String()); err != nil {
+		c.Err <- fmt.Errorf("signUp-SetValue(id): %w", err)
+		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
+		return
+	}
 
-	err = c.DB.Create(model.UserTable)
+	err = c.DB.Create(model.TableUser)
 	if err != nil {
 		switch err.Error() {
 		case `pq: повторяющееся значение ключа нарушает ограничение уникальности "email"`:
 			response := model.ErrorResponse{
 				Code:    "200",
-				Message: fmt.Sprintf("Пользователь с email: %s,  уже зарегистрирован.", usr.Email),
+				Message: fmt.Sprintf("Пользователь с email: %s,  уже зарегистрирован.", usr.Value(model.DBFieldEmail)),
 			}
 			Response(w, http.StatusOK, &response, c)
 		default:
@@ -103,41 +112,40 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	usr, ok := c.DB.Model(model.UserTable).(*model.User)
-	if !ok {
-		c.Err <- fmt.Errorf("signIn-(*User): error convertation")
+	usr := c.DB.Model(model.TableUser)
+	if usr == nil {
+		c.Err <- fmt.Errorf("signIn-(*User): nil")
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
 
-	err = json.Unmarshal(requestBody, usr)
+	err = usr.FromJSON(requestBody)
 	if err != nil {
 		c.Debug <- fmt.Errorf("signIn: %w", err)
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
-	inputPassword := usr.Password
+	inputPassword := usr.Value(model.DBFieldPassword).(string)
 
-	err = c.DB.Read(model.UserTable)
+	err = c.DB.Read(model.TableUser)
 	if err != nil {
 		c.Debug <- fmt.Errorf("signIn: %w", err)
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
 
-	if usr.ID == "" || usr.Email == "" {
+	if usr.Value(model.DBFieldID) == "" || usr.Value(model.DBFieldEmail) == "" {
 		Response(w,
 			http.StatusOK,
 			&model.ErrorResponse{
 				Code:    "200",
-				Message: fmt.Sprintf("Пользователь '%s' не найден\n", usr.Email),
+				Message: fmt.Sprintf("Пользователь '%s' не найден\n", usr.Value(model.DBFieldEmail)),
 			}, c)
 		return
 	}
 
 	inputPassword = fmt.Sprintf("%x", sha256.Sum256([]byte(inputPassword)))
-
-	if usr.Password != inputPassword {
+	if usr.Value(model.DBFieldPassword).(string) != inputPassword {
 		Response(w,
 			http.StatusOK,
 			&model.ErrorResponse{
@@ -147,7 +155,7 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, tokenString, err := c.TokenAuth.Encode(map[string]interface{}{"user_id": usr.ID})
+	_, tokenString, err := c.TokenAuth.Encode(map[string]interface{}{"user_id": usr.Value(model.DBFieldID)})
 	if err != nil {
 		log.Default().Println(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

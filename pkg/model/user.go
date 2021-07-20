@@ -23,39 +23,43 @@ func (u *User) Fields() ([]string, error) {
 	return utils.FieldsFromStruct(u)
 }
 
-func (u *User) Values() (map[string]interface{}, error) {
+func (u *User) Values() (map[DBField]interface{}, error) {
 	fields, err := u.Fields()
 	if err != nil {
 		return nil, err
 	}
-	out := make(map[string]interface{}, len(fields))
+	out := make(map[DBField]interface{}, len(fields))
 	for _, val := range fields {
-		out[val] = u.Value(val)
+		out[DBField(val)] = u.Value(DBField(val))
 	}
 	return out, nil
 }
 
-func (u *User) Value(field string) interface{} {
-	return reflect.ValueOf(u).FieldByName(field).Interface()
+func (u *User) Value(field DBField) interface{} {
+	return reflect.ValueOf(u).FieldByName(string(field)).Interface()
 }
 
 func (u *User) SetValues(mapValues map[string]interface{}) error {
 	return utils.UpdateStruct(u, mapValues)
 }
-func (u *User) SetValue(field string, value interface{}) error {
-	return u.SetValues(map[string]interface{}{field: value})
+func (u *User) SetValue(field DBField, value interface{}) error {
+	return u.SetValues(map[string]interface{}{string(field): value})
 }
 func (u *User) JSON() ([]byte, error) {
 	return json.Marshal(u)
 }
 
-func (u *User) create() error {
+func (u *User) FromJSON(body []byte) error {
+	return json.Unmarshal(body, u)
+}
+
+func (u *User) Create() error {
 	_, err := u.NamedExec(
 		`INSERT INTO public.users (id,email,password) VALUES (:id, :email, :password);`, u)
 	return err
 }
 
-func (u *User) read() error {
+func (u *User) Read() error {
 	if u.ID != "" {
 		err := u.Get(u, `SELECT * FROM public.users WHERE id=$1;`, u.ID)
 		return err
@@ -68,7 +72,7 @@ func (u *User) read() error {
 	return fmt.Errorf("missing field 'id' or 'email' in %T", u)
 }
 
-func (u *User) update() error {
+func (u *User) Update() error {
 	_, err := u.NamedExec(`UPDATE public.users
 SET email=:email,
 password=:password
@@ -76,7 +80,7 @@ WHERE id=:id;`, u)
 	return err
 }
 
-func (u *User) delete() error {
+func (u *User) Delete() error {
 	if u.ID != "" {
 		err := u.Get(u, `DELETE FROM public.users WHERE id=$1;`, u.ID)
 		return err

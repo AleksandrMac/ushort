@@ -10,16 +10,30 @@ import (
 type Table uint8
 
 const (
-	UserTable Table = iota
-	URLTable
+	TableUser Table = iota
+	TableURL
+)
+
+type DBField string
+
+const (
+	DBFieldID          DBField = "id"
+	DBFieldCreatedAt   DBField = "created_at"
+	DBFieldUpdateddAt  DBField = "updated_at"
+	DBFieldEmail       DBField = "email"
+	DBFieldPassword    DBField = "password"
+	DBFieldRedirectTo  DBField = "redirect_to"
+	DBFieldDescription DBField = "description"
+	DBFieldUserID      DBField = "user_id"
 )
 
 type Model interface {
 	Fields() ([]string, error)
-	Values() (map[string]interface{}, error)
-	Value(field string) interface{}
-	SetValue(field string, val interface{}) error
+	Values() (map[DBField]interface{}, error)
+	Value(field DBField) interface{}
+	SetValue(field DBField, val interface{}) error
 	JSON() ([]byte, error)
+	FromJSON(body []byte) error
 }
 
 type CRUD interface {
@@ -52,16 +66,16 @@ func NewDB(dataSourceName string) (*DB, error) {
 	}
 	return &DB{
 		db,
-		&User{db, Base{}, "", ""},
-		&URL{db, Base{}, "", "", ""},
+		nil,
+		nil,
 	}, nil
 }
 
 func (db *DB) Model(table Table) Model {
 	switch table {
-	case UserTable:
+	case TableUser:
 		return db.user
-	case URLTable:
+	case TableURL:
 		return db.url
 	default:
 		return nil
@@ -70,10 +84,10 @@ func (db *DB) Model(table Table) Model {
 
 func (db *DB) Create(table Table) error {
 	switch table {
-	case UserTable:
-		return db.user.create()
-	case URLTable:
-		return db.url.create()
+	case TableUser:
+		return db.user.Create()
+	case TableURL:
+		return db.url.Create()
 	default:
 		return fmt.Errorf("'%T' table not found", table)
 	}
@@ -81,10 +95,10 @@ func (db *DB) Create(table Table) error {
 
 func (db *DB) Read(table Table) error {
 	switch table {
-	case UserTable:
-		return db.user.read()
-	case URLTable:
-		return db.url.read()
+	case TableUser:
+		return db.user.Read()
+	case TableURL:
+		return db.url.Read()
 	default:
 		return fmt.Errorf("'%T' table not found", table)
 	}
@@ -92,10 +106,10 @@ func (db *DB) Read(table Table) error {
 
 func (db *DB) Update(table Table) error {
 	switch table {
-	case UserTable:
-		return db.user.update()
-	case URLTable:
-		return db.url.update()
+	case TableUser:
+		return db.user.Update()
+	case TableURL:
+		return db.url.Update()
 	default:
 		return fmt.Errorf("'%T' table not found", table)
 	}
@@ -103,10 +117,10 @@ func (db *DB) Update(table Table) error {
 
 func (db *DB) Delete(table Table) error {
 	switch table {
-	case UserTable:
-		return db.user.delete()
-	case URLTable:
-		return db.url.delete()
+	case TableUser:
+		return db.user.Delete()
+	case TableURL:
+		return db.url.Delete()
 	default:
 		return fmt.Errorf("'%T' table not found", table)
 	}
