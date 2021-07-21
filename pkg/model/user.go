@@ -72,6 +72,14 @@ func (u *User) Read() error {
 	return fmt.Errorf("missing field 'id' or 'email' in %T", u)
 }
 
+func (u *User) ReadAll(userID string) ([]*User, error) {
+	list := []*User{}
+	if err := u.Select(list, `SELECT * FROM public.users`); err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
 func (u *User) Update() error {
 	_, err := u.NamedExec(`UPDATE public.users
 SET email=:email,

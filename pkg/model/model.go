@@ -40,6 +40,7 @@ type CRUD interface {
 	Model(table Table) Model
 	Create(table Table) error
 	Read(table Table) error
+	ReadAll(table Table, userID string) ([]Model, error)
 	Update(table Table) error
 	Delete(table Table) error
 }
@@ -102,6 +103,33 @@ func (db *DB) Read(table Table) error {
 	default:
 		return fmt.Errorf("'%T' table not found", table)
 	}
+}
+
+func (db *DB) ReadAll(table Table, userID string) ([]Model, error) {
+	var out []Model
+	switch table {
+	case TableUser:
+		users, err := db.user.ReadAll(userID)
+		if err != nil {
+			return nil, err
+		}
+		out = make([]Model, 0, len(users))
+		for _, val := range users {
+			out = append(out, val)
+		}
+	case TableURL:
+		urls, err := db.url.ReadAll(userID)
+		if err != nil {
+			return nil, err
+		}
+		out = make([]Model, 0, len(urls))
+		for _, val := range urls {
+			out = append(out, val)
+		}
+	default:
+		return nil, fmt.Errorf("'%T' table not found", table)
+	}
+	return out, nil
 }
 
 func (db *DB) Update(table Table) error {

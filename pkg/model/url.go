@@ -58,7 +58,21 @@ func (u *URL) Create() error {
 }
 
 func (u *URL) Read() error {
-	return u.Get(u, `SELECT * FROM url WHERE id=$1;`, u.ID)
+	return u.Get(u, `SELECT * FROM public.url WHERE id=$1;`, u.ID)
+}
+
+func (u *URL) ReadAll(userID string) ([]*URL, error) {
+	list := []*URL{}
+	if userID == "" {
+		if err := u.Select(list, `SELECT * FROM public.url`); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := u.Select(list, `SELECT * FROM public.url where user_id = $1`, userID); err != nil {
+			return nil, err
+		}
+	}
+	return list, nil
 }
 
 func (u *URL) Update() error {
