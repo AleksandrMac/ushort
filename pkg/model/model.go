@@ -98,8 +98,8 @@ func NewDB(dataSourceName string) (*DB, error) {
 	}
 	return &DB{
 		db,
-		nil,
-		nil,
+		&User{},
+		&URL{},
 	}, nil
 }
 
