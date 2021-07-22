@@ -4,7 +4,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/jmoiron/sqlx"
+
+	// используется по для чтения миграций из файла
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 type Table uint8
@@ -59,6 +64,23 @@ type Base struct {
 
 func NewDB(dataSourceName string) (*DB, error) {
 	db, err := sqlx.Open("postgres", dataSourceName)
+	if err != nil {
+		return nil, err
+	}
+
+	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
+	if err != nil {
+		return nil, err
+	}
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://./db/migrations",
+		"postgres", driver)
+	if err != nil {
+		return nil, err
+	}
+
+	// nolint: gomnd	// меньше нуля migration.down, иначе migration.up
+	err = m.Steps(2)
 	if err != nil {
 		return nil, err
 	}
