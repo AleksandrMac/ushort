@@ -43,14 +43,14 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	requestBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		c.Debug <- fmt.Errorf("signUP: %w", err)
+		c.Info <- fmt.Sprintf("signUP: %v", err)
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
 
 	usr := c.DB.Model(model.TableUser)
 	if usr == nil {
-		c.Err <- fmt.Errorf("signUp-(*User): nil")
+		c.Info <- "signUp-(*User): nil"
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
