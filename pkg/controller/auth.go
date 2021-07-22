@@ -36,10 +36,13 @@ func (c *Controller) setAuthControllers(r *chi.Mux) {
 // поэтому токен выдается без синхронизации с БД, и без даты истечения срока действия
 // вместо логаута заглушка
 func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
+	c.Info <- "hello1"
+	log.Default().Println("helllllllllo")
 	if r.Body == nil {
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
+	c.Info <- "hello2"
 
 	requestBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -47,6 +50,7 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
+	c.Info <- "hello3"
 
 	usr := c.DB.Model(model.TableUser)
 	if usr == nil {
@@ -54,6 +58,7 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
+	c.Info <- "hello4"
 
 	err = usr.FromJSON(requestBody)
 	if err != nil {
@@ -64,16 +69,21 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 	// можно добавить проверку идентификатора на существование в БД
 
 	pswd := usr.Value(model.DBFieldPassword).(string)
+	c.Info <- "hello6"
 
 	if usr.Value(model.DBFieldEmail) == "" || pswd == "" {
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
+	c.Info <- "hello7"
+
 	if err = usr.SetValue(model.DBFieldPassword, fmt.Sprintf("%x", sha256.Sum256([]byte(pswd)))); err != nil {
 		c.Err <- fmt.Errorf("signUp-SetValue(password): %w", err)
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
+	c.Info <- "hello7"
+
 	if err = usr.SetValue(model.DBFieldID, uuid.New().String()); err != nil {
 		c.Err <- fmt.Errorf("signUp-SetValue(id): %w", err)
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
