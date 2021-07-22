@@ -154,14 +154,16 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 			}, c)
 		return
 	}
-
 	_, tokenString, err := c.TokenAuth.Encode(map[string]interface{}{"user_id": usr.Value(model.DBFieldID)})
 	if err != nil {
 		log.Default().Println(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Add("Authorization", "BEARER "+tokenString)
+	_, err = w.Write([]byte(`{"Authorization": "BEARER ` + tokenString + `"}`))
+	if err != nil {
+		c.Err <- err
+	}
 	w.WriteHeader(http.StatusOK)
 }
 func (c *Controller) SignOut(w http.ResponseWriter, r *http.Request) {
