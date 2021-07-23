@@ -33,28 +33,28 @@ curl -X GET https://mac-short.herokuapp.com/url/generate -H "Authorization: BEAR
 
 ### Получение списка ссылок
 ```
-curl -X GET http://localhost:8000/url/6qiri86cmq -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk" -v
+curl -X GET https://mac-short.herokuapp.com//url/6qiri86cmq -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk" -v
 ```
 
 ### Создание новой короткой ссылки
 ```
-curl -X POST http://localhost:8000/url -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk" -d '{"urlID": "besturl","redirectTo": "https://translate.yandex.ru","description": "instagram promo"}'
+curl -X POST https://mac-short.herokuapp.com/url -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk" -d '{"urlID": "besturl","redirectTo": "https://translate.yandex.ru","description": "instagram promo"}'
 ```
 
 ### Обновление информации о короткой ссылке
 ```
-curl -X PATCH http://localhost:8000/url -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk" -d '{"urlID":"besturl","redirectTo":"https://www.instagram.com/","description":"instagram promo"}'
+curl -X PATCH https://mac-short.herokuapp.com/url -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk" -d '{"urlID":"besturl","redirectTo":"https://www.instagram.com/","description":"instagram promo"}'
 ```
 
 
 ### Получение короткой ссылки по ID
 ```
-curl -X GET http://localhost:8000/url/besturl -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk"
+curl -X GET https://mac-short.herokuapp.com/url/besturl -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk"
 ```
 
 ### Удаление короткой ссылки
 ```
-curl -X DELETE http://localhost:8000/url/6qiri86cmq -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk"
+curl -X DELETE https://mac-short.herokuapp.com/url/6qiri86cmq -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk"
 ```
 
 
