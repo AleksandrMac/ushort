@@ -17,7 +17,7 @@ type Controller struct {
 	TokenAuth *jwtauth.JWTAuth
 	Logger    *zerolog.Logger
 	Info      chan string
-	Debug     chan error
+	Debug     chan string
 	Err       chan error
 	Warn      chan error
 	Critical  chan error
@@ -68,7 +68,7 @@ func New() (*Controller, error) {
 		TokenAuth: jwtauth.New("HS256", cfg.Auth.PrivateKey, nil),
 		Logger:    &logger,
 		Info:      make(chan string),
-		Debug:     make(chan error),
+		Debug:     make(chan string),
 		Err:       make(chan error),
 		Warn:      make(chan error),
 		Critical:  make(chan error),

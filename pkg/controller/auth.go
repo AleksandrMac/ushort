@@ -39,68 +39,84 @@ func (c *Controller) setAuthControllers(r *chi.Mux) {
 // SignUp регистрация нового пользователя
 // nolint: funlen	//длина функции высока из за большого количества проверок
 func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
-	c.Debug <- fmt.Errorf("SignUp: Проверка Requust:Body == nil")
-	log.Default().Println("helllllllllo")
+	var (
+		err         error
+		requestBody []byte
+		usr         model.Model
+		pswd        interface{}
+		email       interface{}
+	)
+
+	c.Debug <- "SignUp: Проверка Requust:Body == nil"
 	if r.Body == nil {
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
 
-	c.Debug <- fmt.Errorf("SignUp: Чтение Requust:Body")
-	requestBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
+	c.Debug <- "SignUp: Чтение Requust:Body"
+	if requestBody, err = ioutil.ReadAll(r.Body); err != nil {
 		c.Info <- fmt.Sprintf("signUP: %v", err)
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
-	c.Debug <- fmt.Errorf("SignUp: Requust:Body('%s')", requestBody)
+	c.Debug <- fmt.Sprintf("SignUp: Request:Body('%s')", requestBody)
 
-	c.Debug <- fmt.Errorf("SignUp: Получаем модель Requust:Body == nil")
-	usr := c.DB.Model(model.TableUser)
-	if usr == nil {
+	c.Debug <- "SignUp: Получаем модель Request:Body"
+	if usr = c.DB.Model(model.TableUser); usr == nil {
 		c.Info <- "signUp-(*User): nil"
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
 
-	c.Debug <- fmt.Errorf("SignUp: Заполням структуру из Requust:Body")
-	err = usr.FromJSON(requestBody)
-	if err != nil {
-		c.Debug <- fmt.Errorf("signUP: %w", err)
+	c.Debug <- "SignUp: Заполням структуру из Request:Body"
+	if err = usr.FromJSON(requestBody); err != nil {
+		c.Debug <- fmt.Sprintf("signUP: %v", err.Error())
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
 	// можно добавить проверку идентификатора на существование в БД
 
-	c.Debug <- fmt.Errorf("SignUp: Получаем пароль из структуры")
-	pswd := usr.Value(model.DBFieldPassword).(string)
-	if usr.Value(model.DBFieldEmail) == "" || pswd == "" {
+	c.Debug <- "SignUp: Получаем пароль из структуры"
+	if pswd, err = usr.Value(model.DBFieldPassword); err != nil {
+		c.Debug <- fmt.Sprintf("signUP: %v", err.Error())
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
 
-	c.Debug <- fmt.Errorf("SignUp: хэшируем пароль")
-	if err = usr.SetValue(model.DBFieldPassword, fmt.Sprintf("%x", sha256.Sum256([]byte(pswd)))); err != nil {
+	c.Debug <- "SignUp: Получаем email из структуры"
+	if email, err = usr.Value(model.DBFieldEmail); err != nil {
+		c.Debug <- fmt.Sprintf("signUP: %v", err.Error())
+		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
+		return
+	}
+
+	c.Debug <- "SignUp: Проверяем email и пароль на пустоту"
+	if email.(string) == "" || pswd.(string) == "" {
+		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
+		return
+	}
+
+	c.Debug <- "SignUp: хэшируем пароль"
+	if err = usr.SetValue(model.DBFieldPassword, fmt.Sprintf("%x", sha256.Sum256([]byte(pswd.(string))))); err != nil {
 		c.Err <- fmt.Errorf("signUp-SetValue(password): %w", err)
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
 
-	c.Debug <- fmt.Errorf("SignUp: Устанавливаем значение id")
+	c.Debug <- "SignUp: Устанавливаем значение id"
 	if err = usr.SetValue(model.DBFieldID, uuid.New().String()); err != nil {
 		c.Err <- fmt.Errorf("signUp-SetValue(id): %w", err)
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
 
-	c.Debug <- fmt.Errorf("SignUp: создаем пользователя в БД")
-	err = c.DB.Create(model.TableUser)
-	if err != nil {
+	c.Debug <- "SignUp: создаем пользователя в БД"
+	if err = c.DB.Create(model.TableUser); err != nil {
 		switch err.Error() {
 		case `pq: повторяющееся значение ключа нарушает ограничение уникальности "email"`:
 			response := model.ErrorResponse{
 				Code:    "200",
-				Message: fmt.Sprintf("Пользователь с email: %s,  уже зарегистрирован.", usr.Value(model.DBFieldEmail)),
+				Message: fmt.Sprintf("Пользователь с email: %s,  уже зарегистрирован.", email.(string)),
 			}
 			Response(w, http.StatusOK, &response, c)
 		default:
@@ -113,53 +129,100 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	http.Redirect(w, r, "/auth/sign-in", http.StatusSeeOther)
 }
+
+// nolint: funlen
 func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
+	var (
+		err         error
+		requestBody []byte
+		usr         model.Model
+		usrID       interface{}
+		inpswd      interface{}
+		bdpswd      interface{}
+		email       interface{}
+		tokenString string
+	)
+
+	c.Debug <- "SignIn: Проверка Requust:Body == nil"
 	if r.Body == nil {
+		c.Debug <- "получено пустое Request:Body"
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
 
-	requestBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		c.Debug <- fmt.Errorf("signIn: %w", err)
+	c.Debug <- "SignIn: Чтение Requust:Body"
+	if requestBody, err = ioutil.ReadAll(r.Body); err != nil {
+		c.Debug <- fmt.Sprintf("signIn: %v", err)
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
+	c.Debug <- fmt.Sprintf("SignUp: Request:Body('%s')", requestBody)
 
-	usr := c.DB.Model(model.TableUser)
-	if usr == nil {
+	c.Debug <- "SignIn: Получаем модель Request:Body"
+	if usr = c.DB.Model(model.TableUser); usr == nil {
 		c.Err <- fmt.Errorf("signIn-(*User): nil")
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
 
-	err = usr.FromJSON(requestBody)
-	if err != nil {
-		c.Debug <- fmt.Errorf("signIn: %w", err)
+	c.Debug <- "SignUp: Заполням структуру из Request:Body"
+	if err = usr.FromJSON(requestBody); err != nil {
+		c.Err <- fmt.Errorf("signIn: %w", err)
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
-	inputPassword := usr.Value(model.DBFieldPassword).(string)
 
-	err = c.DB.Read(model.TableUser)
-	if err != nil {
-		c.Debug <- fmt.Errorf("signIn: %w", err)
+	c.Debug <- "SignIn: Получаем пароль из структуры"
+	if inpswd, err = usr.Value(model.DBFieldPassword); err != nil {
+		c.Err <- err
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
 
-	if usr.Value(model.DBFieldID) == "" || usr.Value(model.DBFieldEmail) == "" {
+	c.Debug <- "SignIn: Получаем user данные из БД"
+
+	if err = c.DB.Read(model.TableUser); err != nil {
+		c.Err <- fmt.Errorf("signIn: %w", err)
+		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
+		return
+	}
+
+	c.Debug <- "SignIn: Получаем ИД из структуры"
+	if usrID, err = usr.Value(model.DBFieldID); err != nil {
+		c.Err <- err
+		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
+		return
+	}
+
+	c.Debug <- "SignIn: Получаем Email из структуры"
+	if email, err = usr.Value(model.DBFieldEmail); err != nil {
+		c.Err <- err
+		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
+		return
+	}
+
+	c.Debug <- "SignIn: Проверяем email и пароль на пустоту"
+	if usrID.(string) == "" || email.(string) == "" {
 		Response(w,
 			http.StatusOK,
 			&model.ErrorResponse{
 				Code:    "200",
-				Message: fmt.Sprintf("Пользователь '%s' не найден\n", usr.Value(model.DBFieldEmail)),
+				Message: fmt.Sprintf("Пользователь '%s' не найден\n", email.(string)),
 			}, c)
 		return
 	}
 
-	inputPassword = fmt.Sprintf("%x", sha256.Sum256([]byte(inputPassword)))
-	if usr.Value(model.DBFieldPassword).(string) != inputPassword {
+	c.Debug <- "SignIn: хэшируем полученный от пользователя пароль"
+	inpswd = fmt.Sprintf("%x", sha256.Sum256([]byte(inpswd.(string))))
+
+	c.Debug <- "SignIn: Получаем пароль из структуры"
+	if bdpswd, err = usr.Value(model.DBFieldPassword); err != nil {
+		c.Err <- err
+		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
+		return
+	}
+
+	if bdpswd.(string) != inpswd {
 		Response(w,
 			http.StatusOK,
 			&model.ErrorResponse{
@@ -168,14 +231,14 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 			}, c)
 		return
 	}
-	_, tokenString, err := c.TokenAuth.Encode(map[string]interface{}{"user_id": usr.Value(model.DBFieldID)})
-	if err != nil {
+
+	if _, tokenString, err = c.TokenAuth.Encode(map[string]interface{}{"user_id": usrID.(string)}); err != nil {
 		log.Default().Println(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	_, err = w.Write([]byte(`{"Authorization": "BEARER ` + tokenString + `"}`))
-	if err != nil {
+
+	if _, err = w.Write([]byte(`{"Authorization": "BEARER ` + tokenString + `"}`)); err != nil {
 		c.Err <- err
 	}
 	w.WriteHeader(http.StatusOK)

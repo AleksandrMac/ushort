@@ -37,7 +37,7 @@ const (
 type Model interface {
 	Fields() ([]string, error)
 	Values() (map[DBField]interface{}, error)
-	Value(field DBField) interface{}
+	Value(field DBField) (interface{}, error)
 	SetValue(field DBField, val interface{}) error
 	JSON() ([]byte, error)
 	FromJSON(body []byte) error

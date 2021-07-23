@@ -63,3 +63,28 @@ func FieldsFromStruct(in interface{}) ([]string, error) {
 	}
 	return out, nil
 }
+
+func Value(in interface{}, tag, field string) (interface{}, error) {
+	if in == nil {
+		return nil, fmt.Errorf("\"in\" is nil")
+	}
+
+	typ := reflect.TypeOf(in)
+	val := reflect.ValueOf(in)
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+		val = val.Elem()
+	}
+
+	if typ.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("\"in\" is not struct")
+	}
+
+	for i := 0; i < typ.NumField(); i++ {
+		f := typ.Field(i)
+		if f.Tag.Get(tag) == field {
+			return val.Field(i).Interface(), nil
+		}
+	}
+	return nil, fmt.Errorf("в структуре %T не найдено поле %s", in, field)
+}

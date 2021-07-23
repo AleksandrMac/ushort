@@ -69,18 +69,18 @@ type mock struct {
 
 func (u *mock) Fields() ([]string, error)                      { return nil, nil }
 func (u *mock) Values() (map[model.DBField]interface{}, error) { return nil, nil }
-func (u *mock) Value(field model.DBField) interface{} {
+func (u *mock) Value(field model.DBField) (interface{}, error) {
 	switch field {
 	case model.DBFieldID:
-		return userID
+		return userID, nil
 	case model.DBFieldEmail:
-		return email
+		return email, nil
 	case model.DBFieldPassword:
-		return u.password
+		return u.password, nil
 	case model.DBFieldRedirectTo:
-		return redirectTo
+		return redirectTo, nil
 	}
-	return nil
+	return nil, fmt.Errorf("not find field")
 }
 func (u *mock) SetValue(field model.DBField, val interface{}) error {
 	switch field {
@@ -117,7 +117,7 @@ var ctrl = &controller.Controller{
 	TokenAuth: jwtauth.New("HS256", []byte("secret"), nil),
 	Config:    &config.Config{LengthURL: 10},
 	Info:      make(chan string),
-	Debug:     make(chan error),
+	Debug:     make(chan string),
 	Err:       make(chan error),
 	Warn:      make(chan error),
 	Critical:  make(chan error),

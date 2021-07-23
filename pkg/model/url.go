@@ -2,7 +2,6 @@ package model
 
 import (
 	"encoding/json"
-	"reflect"
 
 	"github.com/AleksandrMac/ushort/pkg/utils"
 	"github.com/jmoiron/sqlx"
@@ -27,13 +26,16 @@ func (u *URL) Values() (map[DBField]interface{}, error) {
 	}
 	out := make(map[DBField]interface{}, len(fields))
 	for _, val := range fields {
-		out[DBField(val)] = u.Value(DBField(val))
+		out[DBField(val)], err = u.Value(DBField(val))
+		if err != nil {
+			return nil, err
+		}
 	}
 	return out, nil
 }
 
-func (u *URL) Value(field DBField) interface{} {
-	return reflect.ValueOf(u).FieldByName(string(field)).Interface()
+func (u *URL) Value(field DBField) (interface{}, error) {
+	return utils.Value(u, "db", string(field))
 }
 
 func (u *URL) SetValues(mapValues map[string]interface{}) error {

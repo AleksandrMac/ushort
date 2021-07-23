@@ -72,7 +72,7 @@ func ListenChan(ctx context.Context, ctrl *controller.Controller, srv *http.Serv
 		case info := <-ctrl.Info:
 			ctrl.Logger.Info().Msg(info)
 		case deb := <-ctrl.Debug:
-			ctrl.Logger.Debug().Msg(deb.Error())
+			ctrl.Logger.Debug().Msg(deb)
 		case err := <-ctrl.Err:
 			ctrl.Logger.Error().Msg(err.Error())
 		case err := <-ctrl.Warn:
