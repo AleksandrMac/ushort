@@ -10,41 +10,52 @@ https://app.swaggerhub.com/apis/AleksandrMac/UShort/0.0.1
 ## Example
 ### Регистрация на сервисе 
 ```
-curl -X 
+curl -X POST https://mac-short.herokuapp.com/auth/sign-up -d '{"email":"first@user.ru", "password":"12345"}'
 ```
 
-## /cmd/ushort
-Каталог командных файлов
-- /ushort.go - Инициализация сервиса
-- /redir.go - Перенаправление по ссылкам
-- /generate.go - Генерация коротких ссылок
-- /statistics.go - Получение статистики по ссылкам
-## /store
-Каталог хранения данных 
-- /url.csv - сопоставление коротких и настоящих ссылок. [Структура ссылки](https://www.bing.com/search?q=structure+url&qs=n&form=QBRE&sp=-1&pq=structur+url&sc=8-12&sk=&cvid=89E02D1A140744E7A56C3C79587A0D20) Столбцы:
-    - short - короткая ссылка (path)
-    - full - полная ссылка (protocol+domain+path)
-    - status - open or close
-    - created - дата создания ссылки
-    - closed - дата закрытия ссылки
-    - desc - описание ссылки
-<!-- - /statistics.csv - исторя переходов по ссылкам. Столбцы:
-    - url - короткая ссылка
-    - datetime - дата/время перехода по ссылке -->
-<!-- - /blacklist.csv - Список заблокированных сайтов. 
-    - domain - домен подозрительного сайта
-    - datetime - дата/время добавления в список
-    - desc - причина добавления -->
-<!-- - /warninglist.csv - список жалоб
-    - domain - домен подозрительного сайта
-    - full - страница с жалобой
-    - desc - описание проблемы
-    - datetime - дата/время добавления жалобы -->
+### Авторизация на сервисе 
+```
+curl -X POST https://mac-short.herokuapp.com/auth/sign-in -d '{"email":"first@user.ru", "password":"12345"}'
+```
+в ответ получите токен авторизации 
+```
+{"Authorization": "BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk"}
+```
+### Редирект 
+```
+curl -X GET https://mac-short.herokuapp.com/{urlID}
+```
 
-# Run
-Запуск производить из корневого каталога проекта
+### Генерация ссылки
+```
+curl -X GET https://mac-short.herokuapp.com/url/generate -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOWMwZWY1NzEtMjg3Mi00MzViLWFhYzktZjBmNDAyZTZjYzliIn0.fvylVBxU8zYXth4dRwkFIdj6F0sckXRB11XentwBras"
+```
 
-    go run cmd/ushort/main.go
+### Получение списка ссылок
+```
+curl -X GET http://localhost:8000/url/6qiri86cmq -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk" -v
+```
 
-# Configuration
-Настройки хранятся в формате YAML, в файле /config.yaml
+### Создание новой короткой ссылки
+```
+curl -X POST http://localhost:8000/url -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk" -d '{"urlID": "besturl","redirectTo": "https://translate.yandex.ru","description": "instagram promo"}'
+```
+
+### Обновление информации о короткой ссылке
+```
+curl -X PATCH http://localhost:8000/url -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk" -d '{"urlID":"besturl","redirectTo":"https://www.instagram.com/","description":"instagram promo"}'
+```
+
+
+### Получение короткой ссылки по ID
+```
+curl -X GET http://localhost:8000/url/besturl -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk"
+```
+
+### Удаление короткой ссылки
+```
+curl -X DELETE http://localhost:8000/url/6qiri86cmq -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk"
+```
+
+
+
