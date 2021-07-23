@@ -33,6 +33,10 @@ var ErrorResponseMap = map[int]*ErrorResponse{
 		Code:    "403",
 		Message: "Unauthorized request",
 	},
+	404: {
+		Code:    "404",
+		Message: "Not Found",
+	},
 	500: {
 		Code:    "500",
 		Message: "Server error, try again later",

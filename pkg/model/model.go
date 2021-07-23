@@ -22,6 +22,7 @@ const (
 )
 
 type DBField string
+type Field string
 
 const (
 	DBFieldID          DBField = "id"
@@ -32,13 +33,22 @@ const (
 	DBFieldRedirectTo  DBField = "redirect_to"
 	DBFieldDescription DBField = "description"
 	DBFieldUserID      DBField = "user_id"
+
+	FieldID          Field = "ID"
+	FieldCreatedAt   Field = "CreatedAt"
+	FieldUpdateddAt  Field = "UpdatedAt"
+	FieldEmail       Field = "Email"
+	FieldPassword    Field = "Password"
+	FieldRedirectTo  Field = "RedirectTo"
+	FieldDescription Field = "Description"
+	FieldUserID      Field = "UserID"
 )
 
 type Model interface {
 	Fields() ([]string, error)
-	Values() (map[DBField]interface{}, error)
-	Value(field DBField) (interface{}, error)
-	SetValue(field DBField, val interface{}) error
+	Values() (map[Field]interface{}, error)
+	Value(field Field) (interface{}, error)
+	SetValue(field Field, val interface{}) error
 	JSON() ([]byte, error)
 	FromJSON(body []byte) error
 }
@@ -106,8 +116,10 @@ func NewDB(dataSourceName string) (*DB, error) {
 func (db *DB) Model(table Table) Model {
 	switch table {
 	case TableUser:
+		db.user = &User{DB: db.DB}
 		return db.user
 	case TableURL:
+		db.url = &URL{DB: db.DB}
 		return db.url
 	default:
 		return nil

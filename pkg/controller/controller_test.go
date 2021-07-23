@@ -67,24 +67,24 @@ type mock struct {
 	password string
 }
 
-func (u *mock) Fields() ([]string, error)                      { return nil, nil }
-func (u *mock) Values() (map[model.DBField]interface{}, error) { return nil, nil }
-func (u *mock) Value(field model.DBField) (interface{}, error) {
+func (u *mock) Fields() ([]string, error)                    { return nil, nil }
+func (u *mock) Values() (map[model.Field]interface{}, error) { return nil, nil }
+func (u *mock) Value(field model.Field) (interface{}, error) {
 	switch field {
-	case model.DBFieldID:
+	case model.FieldID:
 		return userID, nil
-	case model.DBFieldEmail:
+	case model.FieldEmail:
 		return email, nil
-	case model.DBFieldPassword:
+	case model.FieldPassword:
 		return u.password, nil
-	case model.DBFieldRedirectTo:
+	case model.FieldRedirectTo:
 		return redirectTo, nil
 	}
 	return nil, fmt.Errorf("not find field")
 }
-func (u *mock) SetValue(field model.DBField, val interface{}) error {
+func (u *mock) SetValue(field model.Field, val interface{}) error {
 	switch field {
-	case model.DBFieldPassword:
+	case model.FieldPassword:
 		u.password = val.(string)
 	}
 	return nil

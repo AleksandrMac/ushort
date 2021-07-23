@@ -64,7 +64,7 @@ func FieldsFromStruct(in interface{}) ([]string, error) {
 	return out, nil
 }
 
-func Value(in interface{}, tag, field string) (interface{}, error) {
+func Value(in interface{}, field string) (interface{}, error) {
 	if in == nil {
 		return nil, fmt.Errorf("\"in\" is nil")
 	}
@@ -82,7 +82,7 @@ func Value(in interface{}, tag, field string) (interface{}, error) {
 
 	for i := 0; i < typ.NumField(); i++ {
 		f := typ.Field(i)
-		if f.Tag.Get(tag) == field {
+		if f.Name == field {
 			return val.Field(i).Interface(), nil
 		}
 	}

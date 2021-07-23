@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"reflect"
 
 	"github.com/AleksandrMac/ushort/pkg/utils"
 	"github.com/jmoiron/sqlx"
@@ -19,14 +20,14 @@ func (u *URL) Fields() ([]string, error) {
 	return utils.FieldsFromStruct(u)
 }
 
-func (u *URL) Values() (map[DBField]interface{}, error) {
+func (u *URL) Values() (map[Field]interface{}, error) {
 	fields, err := u.Fields()
 	if err != nil {
 		return nil, err
 	}
-	out := make(map[DBField]interface{}, len(fields))
+	out := make(map[Field]interface{}, len(fields))
 	for _, val := range fields {
-		out[DBField(val)], err = u.Value(DBField(val))
+		out[Field(val)], err = u.Value(Field(val))
 		if err != nil {
 			return nil, err
 		}
@@ -34,15 +35,15 @@ func (u *URL) Values() (map[DBField]interface{}, error) {
 	return out, nil
 }
 
-func (u *URL) Value(field DBField) (interface{}, error) {
-	return utils.Value(u, "db", string(field))
+func (u *URL) Value(field Field) (interface{}, error) {
+	return reflect.ValueOf(u).Elem().FieldByName(string(field)).Interface(), nil
 }
 
 func (u *URL) SetValues(mapValues map[string]interface{}) error {
 	return utils.UpdateStruct(u, mapValues)
 }
 
-func (u *URL) SetValue(field DBField, value interface{}) error {
+func (u *URL) SetValue(field Field, value interface{}) error {
 	return u.SetValues(map[string]interface{}{string(field): value})
 }
 func (u *URL) JSON() ([]byte, error) {

@@ -52,7 +52,7 @@ func (c *Controller) RedirectTo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Debug <- "RedirectTo: устанавливаем значение ИД для URL"
-	if err = url.SetValue(model.DBFieldID, chi.URLParam(r, "urlID")); err != nil {
+	if err = url.SetValue(model.FieldID, chi.URLParam(r, "urlID")); err != nil {
 		c.Err <- fmt.Errorf("redirectTo: %w", err)
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
@@ -71,7 +71,7 @@ func (c *Controller) RedirectTo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Debug <- "RedirectTo: получаем redirect to"
-	if urlTo, err = url.Value(model.DBFieldRedirectTo); err != nil {
+	if urlTo, err = url.Value(model.FieldRedirectTo); err != nil {
 		c.Err <- fmt.Errorf("redirectTo: %w", err)
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
@@ -155,12 +155,8 @@ func (c *Controller) CreateURL(w http.ResponseWriter, r *http.Request) {
 	}
 	c.Debug <- fmt.Sprintf("CreateURL: Request:Body('%s')", requestBody)
 
-	c.Debug <- "CreateURL: Получаем модель Request:Body"
-	if url = c.DB.Model(model.TableURL); url == nil {
-		c.Err <- fmt.Errorf("CreateURL-(*URL): nil")
-		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
-		return
-	}
+	c.Debug <- "CreateURL: Получаем модель URL"
+	url = c.DB.Model(model.TableURL)
 
 	c.Debug <- "CreateURL: Заполням структуру из Request:Body"
 	if err = url.FromJSON(requestBody); err != nil {
@@ -170,21 +166,21 @@ func (c *Controller) CreateURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Debug <- "CreateURL: Устанавливаем значение user_id полченое из AuthToken"
-	if err = url.SetValue(model.DBFieldUserID, usrID.(string)); err != nil {
+	if err = url.SetValue(model.FieldUserID, usrID.(string)); err != nil {
 		c.Err <- fmt.Errorf("CreateURL: %w", err)
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
 
 	c.Debug <- "CreateURL: Получаем ИД из структуры"
-	if urlID, err = url.Value(model.DBFieldID); err != nil {
+	if urlID, err = url.Value(model.FieldID); err != nil {
 		c.Debug <- fmt.Sprintf("signUP: %v", err)
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
 
 	c.Debug <- "CreateURL: Получаем  redirecrTo из структуры"
-	if urlTo, err = url.Value(model.DBFieldID); err != nil {
+	if urlTo, err = url.Value(model.FieldID); err != nil {
 		c.Debug <- fmt.Sprintf("signUP: %v", err)
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
@@ -234,21 +230,17 @@ func (c *Controller) GetURL(w http.ResponseWriter, r *http.Request) {
 	urlID = chi.URLParam(r, "urlID")
 
 	c.Debug <- "GetURL: Получаем модель URL"
-	if url = c.DB.Model(model.TableURL); url == nil {
-		c.Err <- fmt.Errorf("GetURL-(*URL): nil")
-		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
-		return
-	}
+	url = c.DB.Model(model.TableURL)
 
 	c.Debug <- "GetURL: Устанавливаем значение user_id полченое из AuthToken"
-	if err = url.SetValue(model.DBFieldUserID, usrID); err != nil {
+	if err = url.SetValue(model.FieldUserID, usrID); err != nil {
 		c.Err <- fmt.Errorf("GetURL: %w", err)
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
 
 	c.Debug <- "GetURL: Устанавливаем значение url_id полченое из URLParam"
-	if err = url.SetValue(model.DBFieldID, urlID); err != nil {
+	if err = url.SetValue(model.FieldID, urlID); err != nil {
 		c.Err <- fmt.Errorf("GetURL: %w", err)
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
@@ -257,9 +249,15 @@ func (c *Controller) GetURL(w http.ResponseWriter, r *http.Request) {
 	c.Debug <- "GetURL: Читаем данные из БД"
 	if err = c.DB.Read(model.TableURL); err != nil {
 		if err != nil {
-			c.Debug <- fmt.Sprintf("GetURL: %v\n", err)
-			Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
-			return
+			switch err.Error() {
+			case model.SQLResult[model.SQLNoResult].Error():
+				Response(w, http.StatusNotFound, model.ErrorResponseMap[http.StatusNotFound], c)
+				return
+			default:
+				c.Debug <- fmt.Sprintf("GetURL: %v\n", err)
+				Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
+				return
+			}
 		}
 	}
 
@@ -309,12 +307,8 @@ func (c *Controller) UpdateURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.Debug <- "UpdateURL: Получаем модель"
-	if url = c.DB.Model(model.TableURL); url == nil {
-		c.Err <- fmt.Errorf("UpdateURL-(*URL): nil")
-		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
-		return
-	}
+	c.Debug <- "GetURL: Получаем модель URL"
+	url = c.DB.Model(model.TableURL)
 
 	c.Debug <- "UpdateURL: Заполням структуру из Request:Body"
 	if err = url.FromJSON(requestBody); err != nil {
@@ -324,7 +318,7 @@ func (c *Controller) UpdateURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Debug <- "UpdateURL: Устанавливаем значение user_id полченое из AuthToken"
-	if err = url.SetValue(model.DBFieldUserID, usrID.(string)); err != nil {
+	if err = url.SetValue(model.FieldUserID, usrID.(string)); err != nil {
 		c.Err <- fmt.Errorf("UpdateURL: %w", err)
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
@@ -366,21 +360,17 @@ func (c *Controller) DeleteURL(w http.ResponseWriter, r *http.Request) {
 	}
 	urlID = chi.URLParam(r, "urlID")
 
-	c.Debug <- "DeleteURL: Получаем модель"
-	if url = c.DB.Model(model.TableURL); url == nil {
-		c.Err <- fmt.Errorf("DeleteURL-(*URL): nil")
-		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
-		return
-	}
+	c.Debug <- "GetURL: Получаем модель URL"
+	url = c.DB.Model(model.TableURL)
 
 	c.Debug <- "DeleteURL: Устанавливаем значение url_id полченое из URLParam"
-	if err = url.SetValue(model.DBFieldID, urlID); err != nil {
+	if err = url.SetValue(model.FieldID, urlID); err != nil {
 		c.Info <- fmt.Sprintf("DeleteURL: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	c.Debug <- "DeleteURL: Устанавливаем значение user_id полченое из AuthToken"
-	if err = url.SetValue(model.DBFieldUserID, usrID); err != nil {
+	if err = url.SetValue(model.FieldUserID, usrID); err != nil {
 		c.Info <- fmt.Sprintf("DeleteURL: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -401,15 +391,12 @@ func (c *Controller) GenerateURL(w http.ResponseWriter, r *http.Request) {
 	)
 	c.Debug <- "GenerateURL: генерируем URL"
 	for {
-		c.Debug <- "GenerateURL: Получаем модель Request:Body"
-		if url = c.DB.Model(model.TableURL); url == nil {
-			c.Err <- fmt.Errorf("GenerateURL-(*URL): nil")
-			Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
-			return
-		}
+		c.Debug <- "GetURL: Получаем модель URL"
+		url = c.DB.Model(model.TableURL)
 
 		c.Debug <- "GenerateURL: устанавливае urlID"
-		if err = url.SetValue(model.DBFieldID, utils.RandString(c.Config.LengthURL)); err != nil {
+		urlID = utils.RandString(c.Config.LengthURL)
+		if err = url.SetValue(model.FieldID, urlID); err != nil {
 			c.Err <- fmt.Errorf("GenerateURL: %v", err)
 			Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 			return
@@ -417,7 +404,7 @@ func (c *Controller) GenerateURL(w http.ResponseWriter, r *http.Request) {
 
 		c.Debug <- "GenerateURL: получаем данные по URL из БД"
 		if err = c.DB.Read(model.TableURL); err != nil {
-			if err != model.SQLResult[model.SQLNoResult] {
+			if err.Error() != model.SQLResult[model.SQLNoResult].Error() {
 				c.Err <- fmt.Errorf("GenerateURL: %v", err)
 				Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 				return
@@ -425,7 +412,7 @@ func (c *Controller) GenerateURL(w http.ResponseWriter, r *http.Request) {
 		}
 
 		c.Debug <- "GenerateURL: получаем данные по urlTo"
-		if urlTo, err = url.Value(model.DBFieldRedirectTo); err != nil {
+		if urlTo, err = url.Value(model.FieldRedirectTo); err != nil {
 			c.Err <- fmt.Errorf("GenerateURL: %v", err)
 			Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 			return
