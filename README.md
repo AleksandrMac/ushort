@@ -59,3 +59,13 @@ curl -X DELETE https://mac-short.herokuapp.com/url/6qiri86cmq -H "Authorization:
 
 
 
+
+
+## Конфигурация
+TMPURL_LIFE_TIME - время бронирования сгенерированой ссылки, по умолчанию 60 сек  
+LENGTH_URL - длина сгенерированной ссылки  
+LOG_LEVEL - уровень логирования, [trace, debug, info, warn, error, critical]  
+SERVER_GRACEFULLTIME - время Graceful Shutdown  
+DATABASE_URL - урл подключения к бд, по умолчанию: "postgres://postgres:password@localhost:5432/ushort?sslmode=disable"  
+PORT - порт приложения, по умолчанию 8000  
+SERVER_TIMEOUT - серверный тайм-аут  
