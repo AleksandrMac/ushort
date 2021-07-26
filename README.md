@@ -33,7 +33,7 @@ curl -X GET https://mac-short.herokuapp.com/url/generate -H "Authorization: BEAR
 
 ### Получение списка ссылок
 ```
-curl -X GET https://mac-short.herokuapp.com//url/6qiri86cmq -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk" -v
+curl -X GET https://mac-short.herokuapp.com/url/ -H "Authorization: BEARER eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTgwYzg0YTUtMTliMi00MmExLTk4NzUtNzE1YzBkNWNlYjRmIn0.4zWJ8puffcDwBXGDaiKVtIKWiSeaCmF8nsScA_VF_Sk" -v
 ```
 
 ### Создание новой короткой ссылки

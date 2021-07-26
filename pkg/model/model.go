@@ -152,6 +152,7 @@ func (db *DB) ReadAll(table Table, userID string) ([]Model, error) {
 	var out []Model
 	switch table {
 	case TableUser:
+		db.user = &User{DB: db.DB}
 		users, err := db.user.ReadAll(userID)
 		if err != nil {
 			return nil, err
@@ -161,6 +162,7 @@ func (db *DB) ReadAll(table Table, userID string) ([]Model, error) {
 			out = append(out, val)
 		}
 	case TableURL:
+		db.url = &URL{DB: db.DB}
 		urls, err := db.url.ReadAll(userID)
 		if err != nil {
 			return nil, err

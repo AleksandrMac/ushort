@@ -67,11 +67,11 @@ func (u *URL) Read() error {
 func (u *URL) ReadAll(userID string) ([]*URL, error) {
 	list := []*URL{}
 	if userID == "" {
-		if err := u.Select(list, `SELECT * FROM public.url`); err != nil {
+		if err := u.Select(&list, `SELECT * FROM public.url`); err != nil {
 			return nil, err
 		}
 	} else {
-		if err := u.Select(list, `SELECT * FROM public.url where user_id = $1`, userID); err != nil {
+		if err := u.Select(&list, `SELECT * FROM public.url where user_id = $1`, userID); err != nil {
 			return nil, err
 		}
 	}
