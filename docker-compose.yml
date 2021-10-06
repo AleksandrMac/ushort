@@ -1,0 +1,70 @@
+version: '3.4'
+networks: 
+  ushort:
+    external: true
+
+services:
+  ushort:    
+    image: ushort:latest
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - 8000:8000
+      - 8001:8001
+    environment: 
+      - SERVER_PORT=8000
+      - SERVER_TIMEOUT=30
+      - DB_DRIVER=postgres
+      - DB_NAME=ushort
+      - DB_HOST=localhost
+      # - DB_PASSWORD=unset
+      - DB_SSLMODE=disable
+      - DB_TIMEZONE=Asia/Yakutsk 
+    working_dir: /
+    depends_on: 
+      - ushort-db
+      - flyway
+    networks: 
+      - ushort
+
+  ushort-db:
+    image: postgres:13.3
+    volumes: 
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - 5432:5432
+    environment: 
+      # - DATABASE_URL=postgres://db-user:db-password@localhost:5432/ushort?sslmode=disable"
+      - POSTGRES_USER=db-user
+      - POSTGRES_PASSWORD=db-password
+    healthcheck:
+      test: PGPASSWORD='db-password' psql -U db-user --command='SELECT 1'
+      interval: 1s
+      timeout: 2s
+      retries: 5
+    networks: 
+      - ushort
+    
+  flyway:
+    image: flyway/flyway
+    command: -url=jdbc:postgresql://ushort-db:5432/ushort -user=db-user -password=db-password migrate
+    volumes: 
+      - ./db/migration:/flyway/sql
+    depends_on: 
+      - ushort-db
+    networks: 
+      - ushort
+
+  pgadmin:
+    image: dpage/pgadmin4
+    # volumes: 
+    #   - ./db/pgadmin4:/pgadmin4
+    environment: 
+      - PGADMIN_DEFAULT_EMAIL=k-t_monkey@mail.ru
+      - PGADMIN_DEFAULT_PASSWORD=pgadmin
+    ports:
+      - 80:80
+    networks: 
+      - ushort
+
