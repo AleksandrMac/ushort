@@ -67,4 +67,12 @@ services:
       - 8080:8080
     networks: 
       - ushort
+  
+  prometheus:
+    image: prom/prometheus:v2.25.0
+    volumes:
+      - ./deployments/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml 
+      - ./deployments/prometheus/prometheus.rules.yml:/etc/prometheus/prometheus.rules.yml
+    ports:
+      - 9090:9090
 
