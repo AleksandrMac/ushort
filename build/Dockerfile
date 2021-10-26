@@ -1,9 +1,11 @@
-FROM golang:1.16 as modules
+FROM golang:1.17 as modules
+
+RUN ls
 
 ADD go.mod go.sum /m/
 RUN cd /m && go mod download
 
-FROM golang:1.16 as builder
+FROM golang:1.17 as builder
 
 COPY --from=modules /go/pkg /go/pkg
 
@@ -28,3 +30,5 @@ COPY --from=builder /ushort /ushort
 # COPY --from=builder /etc/ssl/certs/ /etc/ssl/certs/
 
 CMD ["/ushort"]
+
+# запуск docker build -f build/Dockerfile --tag aleksandrmac/ushort:latest .

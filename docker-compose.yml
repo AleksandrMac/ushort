@@ -29,7 +29,7 @@ services:
       - ushort
 
   ushort-db:
-    image: postgres:13.3
+    image: postgres:14
     volumes: 
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
@@ -64,7 +64,7 @@ services:
       - PGADMIN_DEFAULT_EMAIL=k-t_monkey@mail.ru
       - PGADMIN_DEFAULT_PASSWORD=pgadmin
     ports:
-      - 80:80
+      - 8080:8080
     networks: 
       - ushort
 
