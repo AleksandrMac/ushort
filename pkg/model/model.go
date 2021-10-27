@@ -3,11 +3,8 @@ package model
 import (
 	"fmt"
 	"log"
-	"os"
 	"time"
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/jmoiron/sqlx"
 
 	// используется по для чтения миграций из файла
@@ -81,28 +78,6 @@ func NewDB(dataSourceName string) (*DB, error) {
 	}
 
 	log.Default().Printf("БД подключена")
-	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
-	if err != nil {
-		return nil, err
-	}
-	m, err := migrate.NewWithDatabaseInstance(
-		"file://db/migrations",
-		"postgres", driver)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Default().Printf("Начинаем миграции")
-	// nolint: gomnd	// меньше нуля migration.down, иначе migration.up
-	err = m.Steps(2)
-	if err != nil {
-		switch err {
-		case os.ErrNotExist:
-			log.Default().Printf("Новых миграций не найдено")
-		default:
-			return nil, err
-		}
-	}
 	if err := db.Ping(); err != nil {
 		return nil, err
 	}

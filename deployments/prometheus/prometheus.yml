@@ -12,14 +12,21 @@ global:
 
 rule_files:                   # список файлов с правилами и алертами 
   - "prometheus.rules.yml"
-  - "alert.rules.yml"
+  # - "alert.rules.yml"
 
 scrape_configs:               # список целей с конфигурацией
   # metrics_path defaults to '/metrics'
   # scheme defaults to 'http'.
-  - job_name: prometheus
+  - job_name: "http"
     scrape_interval: 5s
     scrape_timeout: 2s
-    honor_labels: true
     static_configs:
-      - targets: ['prometheus:9090']
+      - targets: 
+        - 'ushort:8000'
+      - labels:
+          environment: prod_gb
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __address__
+      - source_labels: [__param_target]
+        target_label: instance

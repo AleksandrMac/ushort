@@ -4,38 +4,14 @@ networks:
     external: true
 
 services:
-  ushort:    
-    image: ushort:latest
-    build:
-      context: .
-      dockerfile: ./Dockerfile
-    ports:
-      - 8000:8000
-      - 8001:8001
-    environment: 
-      - SERVER_PORT=8000
-      - SERVER_TIMEOUT=30
-      - DB_DRIVER=postgres
-      - DB_NAME=ushort
-      - DB_HOST=localhost
-      # - DB_PASSWORD=unset
-      - DB_SSLMODE=disable
-      - DB_TIMEZONE=Asia/Yakutsk 
-    working_dir: /
-    depends_on: 
-      - ushort-db
-      - flyway
-    networks: 
-      - ushort
-
   ushort-db:
-    image: postgres:14
+    image: postgres:13
     volumes: 
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - 5432:5432
     environment: 
-      # - DATABASE_URL=postgres://db-user:db-password@localhost:5432/ushort?sslmode=disable"
+      # - DATABASE_URL=postgres://db-user:db-password@tcp:5432/ushort?sslmode=disable"
       - POSTGRES_USER=db-user
       - POSTGRES_PASSWORD=db-password
     healthcheck:
@@ -45,7 +21,7 @@ services:
       retries: 5
     networks: 
       - ushort
-    
+ 
   flyway:
     image: flyway/flyway
     command: -url=jdbc:postgresql://ushort-db:5432/ushort -user=db-user -password=db-password migrate
@@ -53,6 +29,33 @@ services:
       - ./db/migration:/flyway/sql
     depends_on: 
       - ushort-db
+    networks: 
+      - ushort
+
+  ushort:    
+    image: aleksandrmac/ushort:latest
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - 8000:8000
+      # - 8001:8001
+    environment: 
+      - SERVER_PORT=8000
+      - SERVER_TIMEOUT=30
+      # - DB_DRIVER=postgres
+      # - DB_NAME=ushort
+      # - DB_HOST=localhost
+      # - DB_PASSWORD=unset
+      # - DB_SSLMODE=disable
+      # - DB_TIMEZONE=Asia/Yakutsk
+      - DATABASE_URL=postgres://db-user:db-password@ushort-db:5432/ushort?sslmode=disable
+    working_dir: /
+    volumes:
+      - ./internal/secrets:/internal/secrets
+    depends_on: 
+      - ushort-db
+      - flyway
     networks: 
       - ushort
 
@@ -75,4 +78,8 @@ services:
       - ./deployments/prometheus/prometheus.rules.yml:/etc/prometheus/prometheus.rules.yml
     ports:
       - 9090:9090
+    depends_on:
+      - ushort
+    networks: 
+      - ushort
 

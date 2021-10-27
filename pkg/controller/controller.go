@@ -78,4 +78,5 @@ func New() (*Controller, error) {
 func (c *Controller) SetControllers(r *chi.Mux) {
 	c.setAuthControllers(r)
 	c.setURLControllers(r)
+	c.setMetricsControllers(r)
 }
