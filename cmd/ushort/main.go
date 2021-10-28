@@ -17,6 +17,8 @@ import (
 )
 
 func main() {
+	wd, _ := os.Getwd()
+	log.Default().Println(wd)
 	ctrl, err := controller.New()
 	if err != nil {
 		log.Fatal(err)
