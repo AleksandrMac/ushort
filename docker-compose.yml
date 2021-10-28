@@ -51,6 +51,12 @@ services:
       # - DB_TIMEZONE=Asia/Yakutsk
       - DATABASE_URL=postgres://db-user:db-password@ushort-db:5432/ushort?sslmode=disable
     working_dir: /
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-async-connect: "true"
+        fluentd-address: localhost:24224
+        tag: ushort
     volumes:
       - ./internal/secrets:/internal/secrets
     depends_on: 
