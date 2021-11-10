@@ -4,13 +4,14 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/google/uuid"
+	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/log"
 
 	"github.com/AleksandrMac/ushort/pkg/model"
 )
@@ -47,15 +48,20 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 		email       interface{}
 	)
 
+	span, _ := opentracing.StartSpanFromContextWithTracer(c.Ctx, c.Tracer, "SignUp")
+	defer span.Finish()
+
 	c.Debug <- "SignUp: Проверка Requust:Body == nil"
 	if r.Body == nil {
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
+		span.LogFields(log.Error(err))
 		return
 	}
 
 	c.Debug <- "SignUp: Чтение Requust:Body"
 	if requestBody, err = ioutil.ReadAll(r.Body); err != nil {
 		c.Info <- fmt.Sprintf("signUP: %v", err)
+		span.LogFields(log.Error(err))
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
@@ -67,6 +73,7 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 	c.Debug <- "SignUp: Заполням структуру из Request:Body"
 	if err = usr.FromJSON(requestBody); err != nil {
 		c.Debug <- fmt.Sprintf("signUP: %v", err.Error())
+		span.LogFields(log.Error(err))
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
@@ -75,6 +82,7 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 	c.Debug <- "SignUp: Получаем пароль из структуры"
 	if pswd, err = usr.Value(model.FieldPassword); err != nil {
 		c.Debug <- fmt.Sprintf("signUP: %v", err.Error())
+		span.LogFields(log.Error(err))
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
@@ -82,6 +90,7 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 	c.Debug <- "SignUp: Получаем email из структуры"
 	if email, err = usr.Value(model.FieldEmail); err != nil {
 		c.Debug <- fmt.Sprintf("signUP: %v", err.Error())
+		span.LogFields(log.Error(err))
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
@@ -94,6 +103,7 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 	c.Debug <- "SignUp: генерируем и устанавливаем userID"
 	if err = usr.SetValue(model.FieldID, uuid.New().String()); err != nil {
 		c.Err <- fmt.Errorf("signUp-SetValue(password): %w", err)
+		span.LogFields(log.Error(err))
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
@@ -101,6 +111,7 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 	c.Debug <- "SignUp: хэшируем пароль"
 	if err = usr.SetValue(model.FieldPassword, fmt.Sprintf("%x", sha256.Sum256([]byte(pswd.(string))))); err != nil {
 		c.Err <- fmt.Errorf("signUp-SetValue(password): %w", err)
+		span.LogFields(log.Error(err))
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
@@ -108,6 +119,7 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 	c.Debug <- "SignUp: Устанавливаем значение id"
 	if err = usr.SetValue(model.FieldID, uuid.New().String()); err != nil {
 		c.Err <- fmt.Errorf("signUp-SetValue(id): %w", err)
+		span.LogFields(log.Error(err))
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
@@ -115,7 +127,11 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 	c.Debug <- "SignUp: создаем пользователя в БД"
 	if err = c.DB.Create(model.TableUser); err != nil {
 		switch err.Error() {
-		case `pq: повторяющееся значение ключа нарушает ограничение уникальности "email"`:
+		case
+			`pq: повторяющееся значение ключа нарушает ограничение уникальности "email"`,
+			`pq: duplicate key value violates unique constraint "email"`:
+
+			span.LogFields(log.Error(err))
 			response := model.ErrorResponse{
 				Code:    "200",
 				Message: fmt.Sprintf("Пользователь с email: %s,  уже зарегистрирован.", email.(string)),
@@ -123,13 +139,13 @@ func (c *Controller) SignUp(w http.ResponseWriter, r *http.Request) {
 			Response(w, http.StatusOK, &response, c)
 		default:
 			c.Err <- fmt.Errorf("signUp-insert: %w", err)
+			span.LogFields(log.Error(err))
 			Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		}
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	http.Redirect(w, r, "/auth/sign-in", http.StatusSeeOther)
 }
 
 // nolint: funlen
@@ -145,6 +161,9 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 		tokenString string
 	)
 
+	span, _ := opentracing.StartSpanFromContextWithTracer(c.Ctx, c.Tracer, "SignIn")
+	defer span.Finish()
+
 	c.Debug <- "SignIn: Проверка Requust:Body == nil"
 	if r.Body == nil {
 		c.Debug <- "получено пустое Request:Body"
@@ -156,6 +175,7 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 	if requestBody, err = ioutil.ReadAll(r.Body); err != nil {
 		c.Debug <- fmt.Sprintf("signIn: %v", err)
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
+		span.LogFields(log.Error(err))
 		return
 	}
 	c.Debug <- fmt.Sprintf("SignUp: Request:Body('%s')", requestBody)
@@ -166,6 +186,7 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 	c.Debug <- "SignUp: Заполням структуру из Request:Body"
 	if err = usr.FromJSON(requestBody); err != nil {
 		c.Err <- fmt.Errorf("signIn: %w", err)
+		span.LogFields(log.Error(err))
 		Response(w, http.StatusBadRequest, model.ErrorResponseMap[http.StatusBadRequest], c)
 		return
 	}
@@ -173,6 +194,7 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 	c.Debug <- "SignIn: Получаем пароль из структуры"
 	if inpswd, err = usr.Value(model.FieldPassword); err != nil {
 		c.Err <- err
+		span.LogFields(log.Error(err))
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
@@ -181,6 +203,7 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 
 	if err = c.DB.Read(model.TableUser); err != nil {
 		c.Err <- fmt.Errorf("signIn: %w", err)
+		span.LogFields(log.Error(err))
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
@@ -188,6 +211,7 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 	c.Debug <- "SignIn: Получаем ИД из структуры"
 	if usrID, err = usr.Value(model.FieldID); err != nil {
 		c.Err <- err
+		span.LogFields(log.Error(err))
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
@@ -195,6 +219,7 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 	c.Debug <- "SignIn: Получаем Email из структуры"
 	if email, err = usr.Value(model.FieldEmail); err != nil {
 		c.Err <- err
+		span.LogFields(log.Error(err))
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
@@ -216,6 +241,7 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 	c.Debug <- "SignIn: Получаем пароль из структуры"
 	if bdpswd, err = usr.Value(model.FieldPassword); err != nil {
 		c.Err <- err
+		span.LogFields(log.Error(err))
 		Response(w, http.StatusInternalServerError, model.ErrorResponseMap[http.StatusInternalServerError], c)
 		return
 	}
@@ -231,7 +257,7 @@ func (c *Controller) SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, tokenString, err = c.TokenAuth.Encode(map[string]interface{}{"user_id": usrID.(string)}); err != nil {
-		log.Default().Println(err)
+		span.LogFields(log.Error(err))
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
