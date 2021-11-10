@@ -1,6 +1,7 @@
 package controller_test
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"io"
@@ -12,7 +13,9 @@ import (
 	"github.com/AleksandrMac/ushort/pkg/config"
 	"github.com/AleksandrMac/ushort/pkg/controller"
 	"github.com/AleksandrMac/ushort/pkg/model"
+
 	"github.com/go-chi/jwtauth/v5"
+	"github.com/opentracing/opentracing-go/mocktracer"
 )
 
 const (
@@ -112,10 +115,14 @@ func (u *mock) FromJSON([]byte) error {
 // func (u *mockURL) SetValue(field string, val interface{}) error { return nil }
 // func (u *mockURL) JSON() ([]byte, error)                        { return nil, nil }
 
+var tracer = mocktracer.New()
+
 var ctrl = &controller.Controller{
 	DB:        &mockDB{mock: new(mock)},
 	TokenAuth: jwtauth.New("HS256", []byte("secret"), nil),
 	Config:    &config.Config{LengthURL: 10},
+	Tracer:    tracer,
+	Ctx:       context.Background(),
 	Info:      make(chan string),
 	Debug:     make(chan string),
 	Err:       make(chan error),

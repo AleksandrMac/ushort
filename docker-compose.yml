@@ -4,12 +4,13 @@ networks:
     external: true
 
 services:
-  ushort-db:
-    image: postgres:13
+  db:
+    image: postgres:14
     volumes: 
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./db/migration://docker-entrypoint-initdb.d
     ports:
-      - 5432:5432
+      - 5434:5432
     environment: 
       # - DATABASE_URL=postgres://db-user:db-password@tcp:5432/ushort?sslmode=disable"
       - POSTGRES_USER=db-user
@@ -22,15 +23,15 @@ services:
     networks: 
       - ushort
  
-  flyway:
-    image: flyway/flyway
-    command: -url=jdbc:postgresql://ushort-db:5432/ushort -user=db-user -password=db-password migrate
-    volumes: 
-      - ./db/migration:/flyway/sql
-    depends_on: 
-      - ushort-db
-    networks: 
-      - ushort
+  # flyway:
+  #   image: flyway/flyway:latest
+  #   command: -url=jdbc:postgresql://db:5432/ushort -user=db-user -password=db-password migrate
+  #   volumes: 
+  #     - :/flyway/sql
+  #   depends_on: 
+  #     - db
+  #   networks: 
+  #     - ushort
 
   ushort:    
     image: aleksandrmac/ushort:latest
@@ -41,6 +42,8 @@ services:
       - 8000:8000
       # - 8001:8001
     environment: 
+      - JAEGER_AGENT_HOST="jaeger"
+      - JAEGER_AGENT_PORT=6831
       - SERVER_PORT=8000
       - SERVER_TIMEOUT=30
       # - DB_DRIVER=postgres
@@ -49,19 +52,19 @@ services:
       # - DB_PASSWORD=unset
       # - DB_SSLMODE=disable
       # - DB_TIMEZONE=Asia/Yakutsk
-      - DATABASE_URL=postgres://db-user:db-password@ushort-db:5432/ushort?sslmode=disable
+      - DATABASE_URL=postgres://db-user:db-password@db:5432/ushort?sslmode=disable
     working_dir: /
-    logging:
-      driver: "fluentd"
-      options:
-        fluentd-async-connect: "true"
-        fluentd-address: localhost:24224
-        tag: ushort
+    # logging:
+    #   driver: "fluentd"
+    #   options:
+    #     fluentd-async-connect: "true"
+    #     fluentd-address: localhost:24224
+    #     tag: ushort
     volumes:
       - ./internal/secrets:/internal/secrets
     depends_on: 
-      - ushort-db
-      - flyway
+      - db
+      # - flyway
     networks: 
       - ushort
 
@@ -77,15 +80,25 @@ services:
     networks: 
       - ushort
   
-  prometheus:
-    image: prom/prometheus:v2.25.0
-    volumes:
-      - ./deployments/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml 
-      - ./deployments/prometheus/prometheus.rules.yml:/etc/prometheus/prometheus.rules.yml
+  # prometheus:
+  #   image: prom/prometheus:v2.25.0
+  #   volumes:
+  #     - ./deployments/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml 
+  #     - ./deployments/prometheus/prometheus.rules.yml:/etc/prometheus/prometheus.rules.yml
+  #   ports:
+  #     - 9090:9090
+  #   depends_on:
+  #     - ushort
+  #   networks: 
+  #     - ushort
+  
+  jaeger:
+    image: jaegertracing/all-in-one:latest
     ports:
-      - 9090:9090
-    depends_on:
-      - ushort
+      - "6831:6831/udp"
+      - "16685:16685"
+      - "16686:16686"
     networks: 
       - ushort
+
 

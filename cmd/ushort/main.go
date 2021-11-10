@@ -23,29 +23,28 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer ctrl.Close()
 
 	r := chi.NewRouter()
 	r.Use(httplog.RequestLogger(*ctrl.Logger))
 	ctrl.SetControllers(r)
 
-	ctxMain, cancelMain := context.WithCancel(context.Background())
-	defer cancelMain()
 	srv := &http.Server{
 		Addr:    ":" + ctrl.Config.Server.Port,
 		Handler: r,
 	}
 
-	go watchSignals(cancelMain, ctrl)
+	go watchSignals(ctrl)
 
 	go func() {
 		ctrl.Info <- "server starting"
 		ctrl.Critical <- srv.ListenAndServe()
 	}()
 
-	ListenChan(ctxMain, ctrl, srv)
+	ListenChan(ctrl, srv)
 }
 
-func watchSignals(cancel context.CancelFunc, ch *controller.Controller) {
+func watchSignals(ch *controller.Controller) {
 	osSignalChan := make(chan os.Signal, 1)
 
 	signal.Notify(osSignalChan,
@@ -56,13 +55,13 @@ func watchSignals(cancel context.CancelFunc, ch *controller.Controller) {
 	ch.Info <- fmt.Sprintf("got signal %q", sig.String())
 
 	// если сигнал получен, отменяем контекст работы
-	cancel()
+	ch.CtxCancel()
 }
 
-func ListenChan(ctx context.Context, ctrl *controller.Controller, srv *http.Server) {
+func ListenChan(ctrl *controller.Controller, srv *http.Server) {
 	for {
 		select {
-		case <-ctx.Done():
+		case <-ctrl.Ctx.Done():
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(ctrl.Config.ServerGraceFullTime)*time.Second)
 			err := srv.Shutdown(ctx)
 			if err != nil {
